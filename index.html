@@ -12,6 +12,7 @@
       --text: #f8fafc;
       --muted: #94a3b8;
       --green: #22c55e;
+      --border: #1e293b;
     }
     * { box-sizing: border-box; }
     body {
@@ -26,12 +27,12 @@
     aside {
       width: 260px;
       background: #020617;
-      border-right: 1px solid #1e293b;
+      border-right: 1px solid var(--border);
       padding: 20px;
       display: flex;
       flex-direction: column;
     }
-    .brand { font-size: 20px; font-weight: 800; color: var(--accent); margin-bottom: 30px; }
+    .brand { font-size: 22px; font-weight: 800; color: var(--accent); margin-bottom: 30px; letter-spacing: -0.5px; }
     nav button {
       width: 100%;
       background: transparent;
@@ -41,10 +42,13 @@
       text-align: left;
       border-radius: 8px;
       cursor: pointer;
-      margin-bottom: 5px;
+      margin-bottom: 8px;
+      font-weight: 500;
+      transition: 0.2s;
     }
+    nav button:hover { background: rgba(255,255,255,0.05); color: white; }
     nav button.active {
-      background: #1e293b;
+      background: rgba(99, 102, 241, 0.15);
       color: white;
       border-color: var(--accent);
     }
@@ -53,6 +57,8 @@
       padding: 30px;
       overflow-y: auto;
     }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -60,9 +66,10 @@
     }
     .card {
       background: var(--card);
-      border: 1px solid #1e293b;
+      border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 20px;
+      padding: 24px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     .agent-header {
       display: flex;
@@ -76,120 +83,163 @@
       background: var(--green);
       border-radius: 50%;
       display: inline-block;
-      margin-right: 5px;
+      margin-right: 8px;
+      box-shadow: 0 0 8px var(--green);
     }
     .chat-container {
-      height: 300px;
+      height: 350px;
       background: #020617;
       border-radius: 8px;
-      padding: 10px;
+      padding: 15px;
       overflow-y: auto;
-      font-size: 13px;
-      margin-bottom: 10px;
-      border: 1px solid #1e293b;
+      font-size: 14px;
+      margin-bottom: 15px;
+      border: 1px solid var(--border);
     }
-    .msg { margin-bottom: 10px; }
-    .msg-sender { font-weight: bold; color: var(--accent); margin-right: 5px; }
-    .msg-text { color: var(--text); }
-    .input-box {
-      display: flex;
-      gap: 10px;
-    }
+    .msg { margin-bottom: 12px; line-height: 1.4; }
+    .msg-sender { font-weight: bold; color: var(--accent); margin-right: 8px; }
+    .msg-text { color: #cbd5e1; }
+    .input-box { display: flex; gap: 10px; }
     input {
       flex: 1;
       background: #020617;
-      border: 1px solid #1e293b;
+      border: 1px solid var(--border);
       color: white;
-      padding: 10px;
-      border-radius: 6px;
+      padding: 12px;
+      border-radius: 8px;
+      outline: none;
     }
+    input:focus { border-color: var(--accent); }
     button.send {
       background: var(--accent);
       border: none;
       color: white;
-      padding: 0 20px;
-      border-radius: 6px;
+      padding: 0 24px;
+      border-radius: 8px;
       cursor: pointer;
-      font-weight: bold;
+      font-weight: 600;
+      transition: 0.2s;
     }
-    .metric { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
-    .label { font-size: 12px; color: var(--muted); text-transform: uppercase; }
+    button.send:hover { opacity: 0.9; transform: translateY(-1px); }
+    .metric { font-size: 32px; font-weight: 800; margin-bottom: 4px; }
+    .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+    .account-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .account-item:last-child { border-bottom: none; }
   </style>
 </head>
 <body>
   <aside>
     <div class="brand">ZAPIA NEXUS</div>
     <nav>
-      <button class="active">Dashboard</button>
-      <button>Cuentas Google</button>
-      <button>Configuración</button>
-      <button>Historial</button>
+      <button class="active" onclick="showTab('dashboard')">Dashboard</button>
+      <button onclick="showTab('cuentas')">Cuentas Google</button>
+      <button onclick="showTab('config')">Configuración</button>
     </nav>
+    <div style="margin-top: auto; font-size: 11px; color: var(--muted);">v1.2.0 - Actualizado hoy</div>
   </aside>
+  
   <main>
-    <div style="margin-bottom: 30px;">
-      <h1>Orquestador Multi-Agente</h1>
-      <p style="color: var(--muted);">Administrando 5 Zapias Activas</p>
+    <div id="dashboard" class="tab-content active">
+      <div style="margin-bottom: 30px;">
+        <h1>Dashboard Maestro</h1>
+        <p style="color: var(--muted);">Orquestando el ecosistema de 5 identidades</p>
+      </div>
+
+      <div class="grid">
+        <div class="card" style="grid-column: span 2;">
+          <div class="label" style="margin-bottom: 15px;">Inter-Agent Communication (Bus)</div>
+          <div class="chat-container" id="internal-chat">
+            <div class="msg"><span class="msg-sender">Zapia Maestra:</span><span class="msg-text">Esperando instrucciones de Florencia...</span></div>
+            <div class="msg"><span class="msg-sender">Zaira:</span><span class="msg-text">Whapi está listo. No detecto errores de conexión.</span></div>
+          </div>
+          <div class="input-box">
+            <input type="text" placeholder="Escribe una orden global..." id="cmd-input">
+            <button class="send" onclick="sendCmd()">EJECUTAR</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="label">Resumen Operativo</div>
+          <div style="margin-top: 24px;">
+            <div class="metric">5</div>
+            <div class="label">Agentes Activos</div>
+          </div>
+          <div style="margin-top: 24px;">
+            <div class="metric">100%</div>
+            <div class="label">Sincronización</div>
+          </div>
+          <div style="margin-top: 24px;">
+            <div class="metric" style="color: var(--green);">ONLINE</div>
+            <div class="label">Estado General</div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="grid">
-      <div class="card" style="grid-column: span 2;">
-        <div class="label">Chat Interno (Inter-Agentes)</div>
-        <div class="chat-container" id="internal-chat">
-          <div class="msg"><span class="msg-sender">Zapia Maestra:</span><span class="msg-text">Iniciando protocolo de sincronización...</span></div>
-          <div class="msg"><span class="msg-sender">Zaira (Ventas):</span><span class="msg-text">Canal Whapi conectado. Listo para recibir leads.</span></div>
-          <div class="msg"><span class="msg-sender">Academia:</span><span class="msg-text">Base de alumnos en Supabase sincronizada.</span></div>
-          <div class="msg"><span class="msg-sender">Tienda SSH:</span><span class="msg-text">VPS Mayo operando con 3.3GB RAM libres.</span></div>
-        </div>
-        <div class="input-box">
-          <input type="text" placeholder="Orden para la Zapia Maestra..." id="command-input">
-          <button class="send" onclick="alert('Orden enviada al Orquestador')">ENVIAR</button>
-        </div>
+    <div id="cuentas" class="tab-content">
+      <div style="margin-bottom: 30px;">
+        <h1>Cuentas de Google</h1>
+        <p style="color: var(--muted);">Identidades vinculadas al sistema</p>
       </div>
-
       <div class="card">
-        <div class="label">Resumen de Operaciones</div>
-        <div style="margin-top: 20px;">
-          <div class="metric">5</div>
-          <div class="label">Zapias Conectadas</div>
+        <div class="account-item">
+          <div class="status-dot"></div>
+          <div><strong>florenciaamor36@gmail.com</strong><div class="label">Zaira Pro (Ventas)</div></div>
         </div>
-        <div style="margin-top: 20px;">
-          <div class="metric">100%</div>
-          <div class="label">Uptime Servidores</div>
+        <div class="account-item">
+          <div class="status-dot"></div>
+          <div><strong>academia@gmail.com</strong><div class="label">Zapia Academia</div></div>
         </div>
-        <div style="margin-top: 20px;">
-          <div class="metric">24h</div>
-          <div class="label">Autonomía</div>
+        <div class="account-item">
+          <div class="status-dot"></div>
+          <div><strong>tiendassh@gmail.com</strong><div class="label">Tienda SSH</div></div>
         </div>
       </div>
     </div>
 
-    <div class="grid" style="margin-top: 20px;">
-      <div class="card">
-        <div class="agent-header">
-          <strong>Zaira Pro</strong>
-          <span class="status-dot"></span>
-        </div>
-        <div class="label">Google: florenciaamor36@gmail.com</div>
-        <p style="font-size: 13px;">Encargada de Ventas y Whapi.</p>
+    <div id="config" class="tab-content">
+      <div style="margin-bottom: 30px;">
+        <h1>Configuración</h1>
+        <p style="color: var(--muted);">Ajustes del Orquestador</p>
       </div>
       <div class="card">
-        <div class="agent-header">
-          <strong>Zapia Academia</strong>
-          <span class="status-dot"></span>
-        </div>
-        <div class="label">Google: academia@gmail.com</div>
-        <p style="font-size: 13px;">Gestión de alumnos y Supabase.</p>
-      </div>
-      <div class="card">
-        <div class="agent-header">
-          <strong>Tienda SSH</strong>
-          <span class="status-dot"></span>
-        </div>
-        <div class="label">Google: tiendassh@gmail.com</div>
-        <p style="font-size: 13px;">Infraestructura y Scripts.</p>
+        <p>Aquí podrás subir instrucciones PDF y prompts para cada Zapia.</p>
+        <button class="send" style="padding: 12px 20px;">Subir Instrucciones Globales</button>
       </div>
     </div>
   </main>
+
+  <script>
+    function showTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    function sendCmd() {
+      const input = document.getElementById('cmd-input');
+      if(!input.value) return;
+      const chat = document.getElementById('internal-chat');
+      
+      // Mensaje de Florencia
+      chat.innerHTML += `<div class="msg"><span class="msg-sender" style="color: #fff">Florencia:</span><span class="msg-text">${input.value}</span></div>`;
+      
+      // Respuesta simulada de la Maestra
+      setTimeout(() => {
+        chat.innerHTML += `<div class="msg"><span class="msg-sender">Zapia Maestra:</span><span class="msg-text">Recibido. Procesando orden en las sub-Zapias...</span></div>`;
+        chat.scrollTop = chat.scrollHeight;
+      }, 800);
+      
+      input.value = '';
+      chat.scrollTop = chat.scrollHeight;
+    }
+  </script>
 </body>
 </html>
