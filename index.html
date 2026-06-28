@@ -3,179 +3,193 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Zapia Command Center</title>
+  <title>Zapia Nexus - Control Central</title>
   <style>
     :root {
-      --bg: #0b1020;
-      --panel: #121a33;
-      --panel-2: #182343;
-      --text: #eef3ff;
-      --muted: #9fb0d0;
-      --accent: #7c5cff;
-      --green: #35d07f;
-      --yellow: #ffd166;
-      --red: #ff6b6b;
-      --line: rgba(255,255,255,.08);
+      --bg: #050810;
+      --card: #0f172a;
+      --accent: #6366f1;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --green: #22c55e;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: radial-gradient(circle at top, #18254a 0%, var(--bg) 55%);
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
       color: var(--text);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
     }
-    .wrap { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
-    .sidebar {
-      background: rgba(10,16,32,.85);
-      border-right: 1px solid var(--line);
-      padding: 24px;
+    aside {
+      width: 260px;
+      background: #020617;
+      border-right: 1px solid #1e293b;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
     }
-    .brand { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
-    .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
-    .nav { display: grid; gap: 10px; }
-    .nav button {
-      background: var(--panel);
-      color: var(--text);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 12px 14px;
+    .brand { font-size: 20px; font-weight: 800; color: var(--accent); margin-bottom: 30px; }
+    nav button {
+      width: 100%;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--muted);
+      padding: 12px;
       text-align: left;
+      border-radius: 8px;
       cursor: pointer;
+      margin-bottom: 5px;
     }
-    .nav button.active { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(124,92,255,.35) inset; }
-    .main { padding: 28px; }
-    .topbar {
-      display: flex; justify-content: space-between; align-items: center; gap: 12px;
-      margin-bottom: 22px;
+    nav button.active {
+      background: #1e293b;
+      color: white;
+      border-color: var(--accent);
     }
-    .title { font-size: 28px; font-weight: 800; }
-    .pill { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 999px; background: rgba(53,208,127,.12); color: #c9ffe1; border: 1px solid rgba(53,208,127,.25); }
-    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; }
+    main {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
     .card {
-      background: rgba(18,26,51,.88);
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 18px;
-      box-shadow: 0 14px 40px rgba(0,0,0,.18);
+      background: var(--card);
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 20px;
     }
-    .span-4 { grid-column: span 4; }
-    .span-6 { grid-column: span 6; }
-    .span-8 { grid-column: span 8; }
-    .span-12 { grid-column: span 12; }
-    .stat { font-size: 28px; font-weight: 800; margin-top: 10px; }
-    .label { color: var(--muted); font-size: 13px; }
-    .agent { display: flex; justify-content: space-between; align-items: start; gap: 12px; padding: 14px; border-radius: 16px; background: var(--panel-2); border: 1px solid var(--line); margin-top: 12px; }
-    .status { font-size: 12px; padding: 6px 10px; border-radius: 999px; }
-    .online { background: rgba(53,208,127,.15); color: #baf7d6; }
-    .idle { background: rgba(255,209,102,.14); color: #ffe8a6; }
-    .offline { background: rgba(255,107,107,.14); color: #ffb8b8; }
-    .chat {
-      display: grid; grid-template-rows: auto 1fr auto; height: 420px;
+    .agent-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
     }
-    .msgs { overflow: auto; display: grid; gap: 10px; padding-right: 4px; }
-    .msg { padding: 12px 14px; border-radius: 14px; background: var(--panel-2); border: 1px solid var(--line); }
-    .msg.me { background: rgba(124,92,255,.16); }
-    .msg small { color: var(--muted); display: block; margin-bottom: 4px; }
-    .inputrow { display: flex; gap: 10px; margin-top: 14px; }
-    .inputrow input {
-      flex: 1; background: #0d1430; color: var(--text); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      background: var(--green);
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 5px;
     }
-    .inputrow button {
-      background: var(--accent); color: white; border: 0; border-radius: 12px; padding: 12px 16px; cursor: pointer; font-weight: 700;
+    .chat-container {
+      height: 300px;
+      background: #020617;
+      border-radius: 8px;
+      padding: 10px;
+      overflow-y: auto;
+      font-size: 13px;
+      margin-bottom: 10px;
+      border: 1px solid #1e293b;
     }
-    @media (max-width: 1024px) {
-      .wrap { grid-template-columns: 1fr; }
-      .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
-      .span-4, .span-6, .span-8, .span-12 { grid-column: span 12; }
+    .msg { margin-bottom: 10px; }
+    .msg-sender { font-weight: bold; color: var(--accent); margin-right: 5px; }
+    .msg-text { color: var(--text); }
+    .input-box {
+      display: flex;
+      gap: 10px;
     }
+    input {
+      flex: 1;
+      background: #020617;
+      border: 1px solid #1e293b;
+      color: white;
+      padding: 10px;
+      border-radius: 6px;
+    }
+    button.send {
+      background: var(--accent);
+      border: none;
+      color: white;
+      padding: 0 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .metric { font-size: 24px; font-weight: bold; margin-bottom: 5px; }
+    .label { font-size: 12px; color: var(--muted); text-transform: uppercase; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <aside class="sidebar">
-      <div class="brand">Zapia Command Center</div>
-      <div class="subtitle">Panel maestro para controlar 5+ Zapias</div>
-      <div class="nav">
-        <button class="active">Resumen</button>
-        <button>Zapias</button>
-        <button>Chat interno</button>
-        <button>Reportes</button>
-        <button>Automatizaciones</button>
-      </div>
-    </aside>
+  <aside>
+    <div class="brand">ZAPIA NEXUS</div>
+    <nav>
+      <button class="active">Dashboard</button>
+      <button>Cuentas Google</button>
+      <button>Configuración</button>
+      <button>Historial</button>
+    </nav>
+  </aside>
+  <main>
+    <div style="margin-bottom: 30px;">
+      <h1>Orquestador Multi-Agente</h1>
+      <p style="color: var(--muted);">Administrando 5 Zapias Activas</p>
+    </div>
 
-    <main class="main">
-      <div class="topbar">
-        <div>
-          <div class="title">Centro de mando</div>
-          <div class="label">Una Zapia manda, las demás obedecen y reportan.</div>
+    <div class="grid">
+      <div class="card" style="grid-column: span 2;">
+        <div class="label">Chat Interno (Inter-Agentes)</div>
+        <div class="chat-container" id="internal-chat">
+          <div class="msg"><span class="msg-sender">Zapia Maestra:</span><span class="msg-text">Iniciando protocolo de sincronización...</span></div>
+          <div class="msg"><span class="msg-sender">Zaira (Ventas):</span><span class="msg-text">Canal Whapi conectado. Listo para recibir leads.</span></div>
+          <div class="msg"><span class="msg-sender">Academia:</span><span class="msg-text">Base de alumnos en Supabase sincronizada.</span></div>
+          <div class="msg"><span class="msg-sender">Tienda SSH:</span><span class="msg-text">VPS Mayo operando con 3.3GB RAM libres.</span></div>
         </div>
-        <div class="pill">● Sistema online</div>
+        <div class="input-box">
+          <input type="text" placeholder="Orden para la Zapia Maestra..." id="command-input">
+          <button class="send" onclick="alert('Orden enviada al Orquestador')">ENVIAR</button>
+        </div>
       </div>
 
-      <section class="grid">
-        <article class="card span-4">
-          <div class="label">Zapias activas</div>
-          <div class="stat">5</div>
-        </article>
-        <article class="card span-4">
-          <div class="label">Mensajes hoy</div>
-          <div class="stat">248</div>
-        </article>
-        <article class="card span-4">
-          <div class="label">Tareas completadas</div>
-          <div class="stat">31</div>
-        </article>
+      <div class="card">
+        <div class="label">Resumen de Operaciones</div>
+        <div style="margin-top: 20px;">
+          <div class="metric">5</div>
+          <div class="label">Zapias Conectadas</div>
+        </div>
+        <div style="margin-top: 20px;">
+          <div class="metric">100%</div>
+          <div class="label">Uptime Servidores</div>
+        </div>
+        <div style="margin-top: 20px;">
+          <div class="metric">24h</div>
+          <div class="label">Autonomía</div>
+        </div>
+      </div>
+    </div>
 
-        <article class="card span-8">
-          <div class="label">Estado de las Zapias</div>
-          <div class="agent">
-            <div><strong>Zapia Maestra</strong><div class="label">Orquesta todo el sistema</div></div>
-            <div class="status online">ONLINE</div>
-          </div>
-          <div class="agent">
-            <div><strong>Zaira Pro</strong><div class="label">Ventas por WhatsApp / Whapi</div></div>
-            <div class="status online">ONLINE</div>
-          </div>
-          <div class="agent">
-            <div><strong>Zapia Academia</strong><div class="label">Cursos y alumnos</div></div>
-            <div class="status idle">IDLE</div>
-          </div>
-          <div class="agent">
-            <div><strong>Zapia Tienda SSH</strong><div class="label">Infraestructura / scripts</div></div>
-            <div class="status online">ONLINE</div>
-          </div>
-          <div class="agent">
-            <div><strong>Zapia Soporte</strong><div class="label">Post-venta y respuestas</div></div>
-            <div class="status offline">OFFLINE</div>
-          </div>
-        </article>
-
-        <article class="card span-4 chat">
-          <div class="label">Chat interno de agentes</div>
-          <div class="msgs">
-            <div class="msg"><small>Zapia Maestra</small>Quiero un reporte de ventas y leads nuevos.</div>
-            <div class="msg"><small>Zaira Pro</small>Leads listos. Esperando orden de activación.</div>
-            <div class="msg"><small>Zapia Contable</small>Ventas conciliadas. Hay 3 pendientes.</div>
-            <div class="msg me"><small>Florencia</small>Mostrame todo en un panel prolijo.</div>
-          </div>
-          <div class="inputrow">
-            <input placeholder="Escribí una orden para la Maestra..." />
-            <button>Enviar</button>
-          </div>
-        </article>
-
-        <article class="card span-12">
-          <div class="label">Mapa de control</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px;">
-            <div class="agent"><div><strong>Google Account 1</strong><div class="label">Ventas</div></div><div class="status online">OK</div></div>
-            <div class="agent"><div><strong>Google Account 2</strong><div class="label">Academia</div></div><div class="status online">OK</div></div>
-            <div class="agent"><div><strong>Google Account 3</strong><div class="label">Infra</div></div><div class="status idle">SYNC</div></div>
-            <div class="agent"><div><strong>Google Account 4</strong><div class="label">Marketing</div></div><div class="status offline">WAIT</div></div>
-          </div>
-        </article>
-      </section>
-    </main>
-  </div>
+    <div class="grid" style="margin-top: 20px;">
+      <div class="card">
+        <div class="agent-header">
+          <strong>Zaira Pro</strong>
+          <span class="status-dot"></span>
+        </div>
+        <div class="label">Google: florenciaamor36@gmail.com</div>
+        <p style="font-size: 13px;">Encargada de Ventas y Whapi.</p>
+      </div>
+      <div class="card">
+        <div class="agent-header">
+          <strong>Zapia Academia</strong>
+          <span class="status-dot"></span>
+        </div>
+        <div class="label">Google: academia@gmail.com</div>
+        <p style="font-size: 13px;">Gestión de alumnos y Supabase.</p>
+      </div>
+      <div class="card">
+        <div class="agent-header">
+          <strong>Tienda SSH</strong>
+          <span class="status-dot"></span>
+        </div>
+        <div class="label">Google: tiendassh@gmail.com</div>
+        <p style="font-size: 13px;">Infraestructura y Scripts.</p>
+      </div>
+    </div>
+  </main>
 </body>
 </html>
