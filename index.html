@@ -623,12 +623,11 @@ let agents = Array.from({ length: 30 }, (_, i) => generateAgentMetadata(i + 1));
 
 const SB_URL = "https://ypzudkxowpxvdggvongz.supabase.co";
 const SB_KEY = "sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b";
-const supabase = supabase.createClient(SB_URL, SB_KEY);
+const supabase_client = supabase.createClient(SB_URL, SB_KEY);
 
 // Función para conectar el Realtime
 function initRealtime() {
-    const channel = supabase
-        .channel('nexus_changes')
+    const channel = supabase_client.channel('nexus_changes')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'nexus_bus' }, payload => {
             console.log('Nuevo mensaje en el Bus:', payload.new);
             addLog(`[${payload.new.emisor} -> ${payload.new.receptor}]: ${payload.new.mensaje}`);
@@ -642,8 +641,7 @@ function initRealtime() {
 
 // Función para enviar mensajes al bus (para el input del orquestador)
 async function sendToBus(content) {
-    const { error } = await supabase
-        .from('nexus_bus')
+    const { error } = await supabase_client.from('nexus_bus')
         .insert([{ emisor: 'USER_PANEL', receptor: 'BROADCAST', mensaje: content }]);
     if (error) console.error('Error al enviar:', error);
 }
