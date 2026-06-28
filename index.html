@@ -31,8 +31,10 @@
       padding: 20px;
       display: flex;
       flex-direction: column;
+      flex-shrink: 0;
     }
     .brand { font-size: 22px; font-weight: 800; color: var(--accent); margin-bottom: 30px; letter-spacing: -0.5px; }
+    nav { display: flex; flex-direction: column; gap: 8px; }
     nav button {
       width: 100%;
       background: transparent;
@@ -42,7 +44,6 @@
       text-align: left;
       border-radius: 8px;
       cursor: pointer;
-      margin-bottom: 8px;
       font-weight: 500;
       transition: 0.2s;
     }
@@ -71,6 +72,7 @@
       padding: 24px;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
+    .span-2 { grid-column: span 2; }
     .agent-header {
       display: flex;
       justify-content: space-between;
@@ -108,6 +110,7 @@
       padding: 12px;
       border-radius: 8px;
       outline: none;
+      min-width: 0;
     }
     input:focus { border-color: var(--accent); }
     button.send {
@@ -131,17 +134,44 @@
       border-bottom: 1px solid var(--border);
     }
     .account-item:last-child { border-bottom: none; }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+        overflow: auto;
+        height: auto;
+      }
+      aside {
+        width: 100%;
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+        padding: 15px;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+      .brand { margin-bottom: 15px; font-size: 18px; text-align: center; }
+      nav { flex-direction: row; overflow-x: auto; padding-bottom: 5px; }
+      nav button { padding: 8px 12px; white-space: nowrap; font-size: 13px; width: auto; }
+      main { padding: 20px; }
+      .grid { grid-template-columns: 1fr; }
+      .span-2 { grid-column: span 1; }
+      .chat-container { height: 250px; }
+      .card { padding: 15px; }
+      .metric { font-size: 24px; }
+      h1 { font-size: 22px; }
+    }
   </style>
 </head>
 <body>
   <aside>
     <div class="brand">ZAPIA NEXUS</div>
     <nav>
-      <button class="active" onclick="showTab('dashboard')">Dashboard</button>
-      <button onclick="showTab('cuentas')">Cuentas Google</button>
-      <button onclick="showTab('config')">Configuración</button>
+      <button class="active" onclick="showTab('dashboard', this)">Dashboard</button>
+      <button onclick="showTab('cuentas', this)">Cuentas</button>
+      <button onclick="showTab('config', this)">Config</button>
     </nav>
-    <div style="margin-top: auto; font-size: 11px; color: var(--muted);">v1.2.0 - Actualizado hoy</div>
   </aside>
   
   <main>
@@ -152,8 +182,8 @@
       </div>
 
       <div class="grid">
-        <div class="card" style="grid-column: span 2;">
-          <div class="label" style="margin-bottom: 15px;">Inter-Agent Communication (Bus)</div>
+        <div class="card span-2">
+          <div class="label" style="margin-bottom: 15px;">Inter-Agent Communication</div>
           <div class="chat-container" id="internal-chat">
             <div class="msg"><span class="msg-sender">Zapia Maestra:</span><span class="msg-text">Esperando instrucciones de Florencia...</span></div>
             <div class="msg"><span class="msg-sender">Zaira:</span><span class="msg-text">Whapi está listo. No detecto errores de conexión.</span></div>
@@ -166,13 +196,15 @@
 
         <div class="card">
           <div class="label">Resumen Operativo</div>
-          <div style="margin-top: 24px;">
-            <div class="metric">5</div>
-            <div class="label">Agentes Activos</div>
-          </div>
-          <div style="margin-top: 24px;">
-            <div class="metric">100%</div>
-            <div class="label">Sincronización</div>
+          <div style="margin-top: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+              <div class="metric">5</div>
+              <div class="label">Agentes</div>
+            </div>
+            <div>
+              <div class="metric">100%</div>
+              <div class="label">Sync</div>
+            </div>
           </div>
           <div style="margin-top: 24px;">
             <div class="metric" style="color: var(--green);">ONLINE</div>
@@ -185,7 +217,7 @@
     <div id="cuentas" class="tab-content">
       <div style="margin-bottom: 30px;">
         <h1>Cuentas de Google</h1>
-        <p style="color: var(--muted);">Identidades vinculadas al sistema</p>
+        <p style="color: var(--muted);">Identidades vinculadas</p>
       </div>
       <div class="card">
         <div class="account-item">
@@ -210,17 +242,17 @@
       </div>
       <div class="card">
         <p>Aquí podrás subir instrucciones PDF y prompts para cada Zapia.</p>
-        <button class="send" style="padding: 12px 20px;">Subir Instrucciones Globales</button>
+        <button class="send" style="padding: 12px 20px; width: 100%;">Subir Instrucciones Globales</button>
       </div>
     </div>
   </main>
 
   <script>
-    function showTab(tabId) {
+    function showTab(tabId, btn) {
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
       document.getElementById(tabId).classList.add('active');
-      event.target.classList.add('active');
+      btn.classList.add('active');
     }
 
     function sendCmd() {
@@ -228,10 +260,8 @@
       if(!input.value) return;
       const chat = document.getElementById('internal-chat');
       
-      // Mensaje de Florencia
       chat.innerHTML += `<div class="msg"><span class="msg-sender" style="color: #fff">Florencia:</span><span class="msg-text">${input.value}</span></div>`;
       
-      // Respuesta simulada de la Maestra
       setTimeout(() => {
         chat.innerHTML += `<div class="msg"><span class="msg-sender">Zapia Maestra:</span><span class="msg-text">Recibido. Procesando orden en las sub-Zapias...</span></div>`;
         chat.scrollTop = chat.scrollHeight;
