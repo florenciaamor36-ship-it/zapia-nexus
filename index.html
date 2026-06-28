@@ -130,6 +130,18 @@ border-bottom-color: #666;
 outline: none;
 border-bottom-color: #60a5fa;
 }
+/* --- MOBILE OPTIMIZATIONS v2 --- */
+@media (max-width: 768px) {
+#mobile-content { padding: 1rem !important; }
+.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+.text-3xl { font-size: 1.5rem !important; line-height: 2rem !important; }
+section { height: auto !important; min-height: 100% !important; }
+#sections-container { padding: 1rem !important; }
+/* Fix for overflow on small screens */
+.bg-card { overflow-wrap: break-word; }
+/* Ensure the bottom nav doesn't cover content */
+body { padding-bottom: 4rem; }
+}
 </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
