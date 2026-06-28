@@ -130,19 +130,8 @@ border-bottom-color: #666;
 outline: none;
 border-bottom-color: #60a5fa;
 }
-/* --- MOBILE OPTIMIZATIONS v2 --- */
-@media (max-width: 768px) {
-#mobile-content { padding: 1rem !important; }
-.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
-.text-3xl { font-size: 1.5rem !important; line-height: 2rem !important; }
-section { height: auto !important; min-height: 100% !important; }
-#sections-container { padding: 1rem !important; }
-/* Fix for overflow on small screens */
-.bg-card { overflow-wrap: break-word; }
-/* Ensure the bottom nav doesn't cover content */
-body { padding-bottom: 4rem; }
-}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 <div id="toast-container" class="fixed top-4 right-4 z-[200] space-y-2 pointer-events-none"></div>
@@ -631,6 +620,34 @@ let agents = Array.from({ length: 30 }, (_, i) => generateAgentMetadata(i + 1));
 // =============================================
 // 📦 ESTADO GLOBAL
 // =============================================
+
+const SB_URL = "https://ypzudkxowpxvdggvongz.supabase.co";
+const SB_KEY = "sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b";
+const supabase = supabase.createClient(SB_URL, SB_KEY);
+
+// Función para conectar el Realtime
+function initRealtime() {
+    const channel = supabase
+        .channel('nexus_changes')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'nexus_bus' }, payload => {
+            console.log('Nuevo mensaje en el Bus:', payload.new);
+            addLog(`[${payload.new.emisor} -> ${payload.new.receptor}]: ${payload.new.mensaje}`);
+            if (payload.new.receptor === 'BROADCAST' || payload.new.receptor === 'ORCHESTRATOR') {
+                // Podríamos disparar alguna acción visual aquí
+            }
+        })
+        .subscribe();
+    console.log('Zapia Nexus conectado a Supabase Realtime');
+}
+
+// Función para enviar mensajes al bus (para el input del orquestador)
+async function sendToBus(content) {
+    const { error } = await supabase
+        .from('nexus_bus')
+        .insert([{ emisor: 'USER_PANEL', receptor: 'BROADCAST', mensaje: content }]);
+    if (error) console.error('Error al enviar:', error);
+}
+
 const STATE = {
 currentSection: 'dashboard',
 currentChatTab: 'zaira',
