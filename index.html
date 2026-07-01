@@ -8,8 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter for a modern, clean look -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Supabase SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -144,21 +142,22 @@
             outline: none;
             border-bottom-color: #60a5fa;
         }
+    </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-        @media (max-width: 767px) {
-            #mobile-nav {
-                position: fixed !important;
-                bottom: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                z-index: 10000 !important;
-                background-color: var(--color-bg-card) !important;
-            }
-            #mobile-content {
-                padding-bottom: 120px !important;
-            }
+    <style>
+        @media (max-width: 768px) {
+            .flex.h-screen.bg-base { display: none !important; }
+            div.md\:hidden { display: flex !important; flex-direction: column !important; position: fixed !important; top: 0; left: 0; right: 0; bottom: 0; height: 100vh !important; background-color: #121212 !important; z-index: 50 !important; }
+            nav#mobile-nav { position: fixed !important; bottom: 0 !important; left: 0; right: 0; width: 100% !important; height: 75px !important; display: flex !important; flex-direction: row !important; justify-content: space-around !important; align-items: center !important; background-color: #1f1f1f !important; border-top: 1px solid #333 !important; z-index: 10000 !important; padding-bottom: env(safe-area-inset-bottom); }
+            nav#mobile-nav button.nav-link { display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; color: #9ca3af !important; flex: 1 !important; height: 100% !important; }
+            nav#mobile-nav button.nav-link.active { color: #60a5fa !important; }
+            nav#mobile-nav button.nav-link i { font-size: 22px !important; margin-bottom: 4px !important; }
+            nav#mobile-nav button.nav-link span { font-size: 10px !important; }
+            #mobile-content { flex: 1 !important; overflow-y: auto !important; padding-bottom: 100px !important; }
         }
     </style>
+
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
@@ -463,14 +462,18 @@
     </div>
 
     <script>
+        
+        const SB_URL = 'https://ypzudkxowpxvdggvongz.supabase.co';
+        const SB_KEY = 'sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b';
+        const sb_client = supabase.createClient(SB_URL, SB_KEY);
+        function initNexusConnection() {
+            sb_client.channel('nexus_bus').on('postgres_changes', {event:'INSERT', schema:'public', table:'nexus_bus'}, p => {
+                if(window.addLog) addLog('['+p.new.emisor+']: '+p.new.mensaje);
+            }).subscribe();
+        }
+        async 
 
-        // =============================================
-        // 🗄️ SUPABASE CONNECTION
-        // =============================================
-        const SUPABASE_URL = 'https://ypzudkxowpxvdggvongz.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        // =============================================
+// =============================================
         // 🗄️ BASE DE DATOS SIMULADA - METADATA COMPLETA DE CADA AGENTE
         // =============================================
         // Esto simula lo que vendría de una API/DB real.
@@ -1588,53 +1591,7 @@
         // =============================================
         // 🎭 ORQUESTADOR
         // =============================================
-        async function executeOrchestratorCommand() {
-            const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
-            if (!input || !input.value.trim()) return;
-            const command = input.value.trim();
-            const logFeed = document.getElementById('log-feed') || document.querySelector('#mobile-content #log-feed');
-            const syncStatus = document.getElementById('sync-status');
-            
-            // Supabase injection
-            try {
-                const { data, error } = await supabaseClient
-                    .from('orchestrator_commands')
-                    .insert([{ command: command, status: 'pending', created_at: new Date() }]);
-                if (error) throw error;
-                console.log('Comando enviado a Supabase:', data);
-            } catch (err) {
-                console.error('Error al enviar comando a Supabase:', err);
-            }
-
-            if (logFeed) {
-                const entry = document.createElement('div');
-                entry.className = 'flex gap-2';
-                entry.innerHTML = `<span class="text-yellow-500">[SYS]</span> <span class="text-gray-400">[${new Date().toLocaleTimeString()}] ${command}</span>`;
-                logFeed.appendChild(entry);
-                logFeed.scrollTop = logFeed.scrollHeight;
-            }
-            if (syncStatus) {
-                syncStatus.textContent = 'Comando procesado';
-                syncStatus.classList.add('text-green-400');
-                setTimeout(() => {
-                    syncStatus.textContent = 'Real-time sync';
-                    syncStatus.classList.remove('text-green-400');
-                }, 2000);
-            }
-            if (command.startsWith('/')) executeSlashCommand(command);
-            input.value = '';
-        }
-            if (syncStatus) {
-                syncStatus.textContent = 'Comando procesado';
-                syncStatus.classList.add('text-green-400');
-                setTimeout(() => {
-                    syncStatus.textContent = 'Real-time sync';
-                    syncStatus.classList.remove('text-green-400');
-                }, 2000);
-            }
-            if (command.startsWith('/')) executeSlashCommand(command);
-            input.value = '';
-        }
+        
 
         // =============================================
         // 🔄 SIMULACIÓN DE ACTUALIZACIÓN EN VIVO
@@ -1721,7 +1678,7 @@
             document.getElementById('drawer-agent-name')?.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
             });
-            console.log('🚀 Zapia Nexus v3.1.2 inicializado');
+            initNexusConnection(); console.log('🚀 Zapia Nexus v3.1.2 inicializado');
             console.log('🔐 30 agentes con metadata completa');
             console.log('🔗 Servicios: Google, Facebook, WhatsApp, Telegram, IA, BD, CRM, etc.');
             console.log('💡 Ctrl+1-4: Navegar | Ctrl+K: Chat | Esc: Cerrar paneles');
