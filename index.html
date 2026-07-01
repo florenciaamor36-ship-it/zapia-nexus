@@ -144,67 +144,6 @@
         }
     </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <style>
-        /* --- MOBILE LAYOUT FORCED V17 --- */
-        @media (max-width: 768px) {
-            /* Ocultar versión escritorio */
-            .flex.h-screen.bg-base.overflow-hidden { display: none !important; }
-            
-            /* Forzar visualización de la versión móvil */
-            div.md\:hidden.flex.flex-col { 
-                display: flex !important; 
-                flex-direction: column !important;
-                height: 100vh !important;
-                height: -webkit-fill-available !important;
-                background-color: #121212 !important;
-                position: fixed !important;
-                top: 0; left: 0; right: 0; bottom: 0;
-                overflow: hidden !important;
-                z-index: 50 !important;
-            }
-
-            #mobile-content {
-                flex: 1 !important;
-                overflow-y: auto !important;
-                padding: 16px !important;
-                padding-bottom: 100px !important; /* Espacio para que el nav no tape nada */
-                -webkit-overflow-scrolling: touch;
-            }
-
-            #mobile-nav {
-                position: fixed !important;
-                bottom: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                height: 70px !important;
-                display: flex !important;
-                flex-direction: row !important;
-                justify-content: space-around !important;
-                align-items: center !important;
-                background: #1f1f1f !important;
-                border-top: 1px solid #333 !important;
-                z-index: 1000 !important;
-                padding-bottom: env(safe-area-inset-bottom);
-            }
-
-            .nav-link {
-                display: flex !important;
-                flex-direction: column !important;
-                align-items: center !important;
-                color: #9ca3af !important;
-                text-decoration: none !important;
-            }
-            .nav-link.active { color: #60a5fa !important; }
-            .nav-link i { font-size: 22px !important; margin-bottom: 2px; }
-            .nav-link span { font-size: 10px !important; font-weight: 600; }
-            
-            /* Ajustar headers y textos para pantallas chicas */
-            h1.text-sm { font-size: 12px !important; }
-            .agent-card { margin-bottom: 12px !important; }
-        }
-    </style>
-
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
@@ -509,27 +448,33 @@
     </div>
 
     <script>
-        
-    // --- NEXUS LIVE CONNECTION ---
-    const sb_client = supabase.createClient('https://ypzudkxowpxvdggvongz.supabase.co', 'sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b');
-    
-    function initNexusConnection() {
-        console.log('Nexus Motor Conectado');
-        sb_client.channel('nexus_bus').on('postgres_changes', {event:'INSERT', schema:'public', table:'nexus_bus'}, p => {
-            if(window.addLog) addLog();
-        }).subscribe();
-    }
 
-    // Sobrescribir window.onload para asegurar arranque
-    const originalOnload = window.onload;
-    window.onload = function() {
-        if(originalOnload) originalOnload();
-        if(typeof init === 'function') init();
-        initNexusConnection();
-        console.log('Zapia Nexus v3.1.2 Operativa');
-    };
+        // =============================================
+        // 🛰️ CONEXIÓN REAL - SUPABASE
+        // =============================================
+        const SB_URL = "https://ypzudkxowpxvdggvongz.supabase.co";
+        const SB_KEY = "sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b";
+        const sb = supabase.createClient(SB_URL, SB_KEY);
 
-// =============================================
+        function initNexusConnection() {
+            sb.channel('nexus_bus').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'nexus_bus' }, payload => {
+                if (window.addLog) {
+                    addLog('[' + payload.new.emisor + ']: ' + payload.new.mensaje);
+                }
+            }).subscribe();
+        }
+
+        async function nexusSendOrder(content) {
+            const { error } = await sb.from('nexus_bus').insert([{ 
+                emisor: 'USER_PANEL', 
+                receptor: 'Zapia-Alpha', 
+                mensaje: content,
+                status: 'pending' 
+            }]);
+            if (error) console.error('Error al enviar:', error);
+        }
+
+        // =============================================
         // 🗄️ BASE DE DATOS SIMULADA - METADATA COMPLETA DE CADA AGENTE
         // =============================================
         // Esto simula lo que vendría de una API/DB real.
@@ -1651,12 +1596,16 @@
             const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
             if (!input || !input.value.trim()) return;
             const command = input.value.trim();
-            const logFeed = document.getElementById('log-feed') || document.querySelector('#mobile-content #log-feed');
-            const syncStatus = document.getElementById('sync-status');
-            if (logFeed) {
-                const entry = document.createElement('div');
-                entry.className = 'flex gap-2';
-                entry.innerHTML = `<span class="text-yellow-500">[SYS]</span> <span class="text-gray-400">[${new Date().toLocaleTimeString()}] ${command}</span>`;
+            
+            // 1. Mostrar en el log local inmediatamente
+            if (typeof addLog === 'function') addLog('[SYS] Enviando orden: ' + command);
+            
+            // 2. Enviar a Supabase
+            nexusSendOrder(command);
+            
+            // 3. Limpiar input
+            input.value = '';
+        }] ${command}</span>`;
                 logFeed.appendChild(entry);
                 logFeed.scrollTop = logFeed.scrollHeight;
             }
