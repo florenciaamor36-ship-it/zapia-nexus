@@ -401,7 +401,7 @@
     </div>
 
     <!-- ==================== MOBILE VIEW (BOTTOM NAV) ==================== -->
-    <div class="md:hidden flex flex-col h-full overflow-hidden" style="display:flex; position:fixed; top:0; left:0; right:0; bottom:0; z-index:100; background:#121212;">
+    <div class="md:hidden flex flex-col h-full overflow-hidden">
         <header class="h-14 border-b border-base flex items-center px-6 justify-between bg-card relative">
             <h1 class="text-sm font-bold tracking-tight text-white uppercase tracking-widest">Nexus</h1>
             <div class="flex items-center gap-3">
@@ -449,6 +449,20 @@
 
     <script>
         // =============================================
+        async function executeOrchestratorCommand() {
+            const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
+            if (!input || !input.value.trim()) return;
+            const command = input.value.trim();
+            if (typeof supabase === 'undefined') return;
+            const sb = supabase.createClient('https://ypzudkxowpxvdggvongz.supabase.co', 'sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b');
+            const { error } = await sb.from('nexus_bus').insert([{
+                emisor: 'MAESTRA',
+                receptor: 'Zapia-Alpha',
+                mensaje: command,
+                status: 'pending'
+            }]);
+            if (!error) input.value = '';
+        }
         // 🗄️ BASE DE DATOS SIMULADA - METADATA COMPLETA DE CADA AGENTE
         // =============================================
         // Esto simula lo que vendría de una API/DB real.
@@ -1566,19 +1580,7 @@
         // =============================================
         // 🎭 ORQUESTADOR
         // =============================================
-        function executeOrchestratorCommand() {
-            const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
-            if (!input || !input.value.trim()) return;
-            const command = input.value.trim();
-            if (typeof supabase !== 'undefined') {
-                const sb = supabase.createClient('https://ypzudkxowpxvdggvongz.supabase.co', 'sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b');
-                sb.from('nexus_bus').insert([{ emisor: 'MAESTRA', receptor: 'Zapia-Alpha', mensaje: command, status: 'pending' }]).then(({error}) => {
-                    if (!error) input.value = '';
-                });
-            } else {
-                input.value = '';
-            }
-        }
+        
 
         // =============================================
         // 🔄 SIMULACIÓN DE ACTUALIZACIÓN EN VIVO
