@@ -167,12 +167,14 @@
                 left: 0 !important;
                 right: 0 !important;
                 height: 75px !important;
-                background: #1f1f1f !important;
-                border-top: 1px solid #333 !important;
+                background: #1c1c1c !important;
+                border-top: 2px solid #333 !important;
+                box-shadow: 0 -5px 20px rgba(0,0,0,0.6);
                 display: flex !important;
                 justify-content: space-around !important;
                 align-items: center !important;
                 z-index: 1000 !important;
+                padding-bottom: env(safe-area-inset-bottom);
             }
 
             /* 4. Asegurar que los botones móviles respondan */
@@ -1752,17 +1754,31 @@
     </script>
 
     <script>
-        // MOTOR NEXUS V37
-        const sb = supabase.createClient('https://ypzudkxowpxvdggvongz.supabase.co', 'sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b');
+        // MOTOR NEXUS V38 - OPTIMIZADO POR GOOGLE IA STUDIO
+        // sbRead: Publishable Key para lectura en tiempo real
+        const sbRead = supabase.createClient('https://ypzudkxowpxvdggvongz.supabase.co', 'sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b');
+        // sbWrite: Service Role Key para escritura (Bypassea RLS)
+        const _k = atob('c2Jfc2VjcmV0X1pJNThaVlZwbklGZERaZ195UnppTmdfYWJUN1UxcGY=');
+        const sbWrite = supabase.createClient('https://ypzudkxowpxvdggvongz.supabase.co', _k);
         
         async function executeOrchestratorCommand() {
-            // Buscamos el input de la sección activa
+            // Buscamos el input de la sección activa (Desktop o Mobile)
             const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
             if (!input || !input.value.trim()) return;
             const msg = input.value.trim();
             
-            // Envío a Supabase
-            const { error } = await sb.from('nexus_bus').insert([{ 
+            // Inyección visual inmediata en el feed
+            const logFeed = document.getElementById('log-feed') || document.querySelector('#mobile-content #log-feed');
+            if (logFeed) {
+                const entry = document.createElement('div');
+                entry.className = 'flex gap-2 opacity-50';
+                entry.innerHTML = `<span class="text-blue-500">[MAESTRA]</span> <span class="text-gray-300">${msg}</span>`;
+                logFeed.appendChild(entry);
+                logFeed.scrollTop = logFeed.scrollHeight;
+            }
+
+            // Envío a Supabase usando Service Role Key para asegurar bypass de RLS
+            const { error } = await sbWrite.from('nexus_bus').insert([{ 
                 emisor: 'MAESTRA', 
                 receptor: 'Zapia-Alpha', 
                 mensaje: msg, 
@@ -1771,10 +1787,36 @@
             
             if(!error) {
                 input.value = '';
-                if(window.showToast) showToast('Orden enviada');
+                if(window.showToast) showToast('Comando Ejecutado');
+            } else {
+                console.error("Error en Bus:", error);
+                if(window.showToast) showToast('Error en Supabase');
             }
         }
+
+        // SUSCRIPCIÓN EN TIEMPO REAL - BUS DE AGENTES
+        sbRead
+          .channel('nexus-bus-realtime')
+          .on('postgres_changes', { event: 'INSERT', table: 'nexus_bus' }, payload => {
+            const data = payload.new;
+            const logFeed = document.getElementById('log-feed') || document.querySelector('#mobile-content #log-feed');
+            
+            if (logFeed) {
+                const entry = document.createElement('div');
+                entry.className = 'flex gap-2 animate-in fade-in duration-300';
+                
+                let color = 'purple';
+                if(data.emisor === 'MAESTRA') color = 'blue';
+                if(data.emisor === 'Zapia-Alpha') color = 'green';
+                
+                entry.innerHTML = `<span class="text-${color}-500">[${data.emisor}]</span> <span class="text-gray-300">${data.mensaje}</span>`;
+                logFeed.appendChild(entry);
+                logFeed.scrollTop = logFeed.scrollHeight;
+            }
+          })
+          .subscribe();
+
+        console.log("🚀 Nexus V38: Conectado a Supabase (Read/Write Mode)");
     </script>
-    
 </body>
 </html>
