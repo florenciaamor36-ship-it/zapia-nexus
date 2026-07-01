@@ -144,43 +144,6 @@
         }
     </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<style>
-    @media (max-width: 768px) {
-        /* Desactivar escritorio */
-        body > div.flex.h-screen { display: none !important; }
-        
-        /* Forzar visualización de móvil */
-        div.md\:hidden.flex.flex-col.h-full { 
-            display: flex !important; 
-            height: 100vh !important; 
-            background: #121212 !important;
-            position: fixed !important;
-            top:0; left:0; right:0; bottom:0;
-            z-index: 100 !important;
-        }
-        
-        /* Nav bar fija al fondo */
-        #mobile-nav {
-            position: fixed !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            height: 70px !important;
-            background: #1f1f1f !important;
-            border-top: 1px solid #333 !important;
-            display: flex !important;
-            justify-content: space-around !important;
-            align-items: center !important;
-            z-index: 1000 !important;
-        }
-        
-        #mobile-content {
-            padding-bottom: 80px !important;
-            overflow-y: auto !important;
-        }
-    }
-</style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
@@ -438,7 +401,7 @@
     </div>
 
     <!-- ==================== MOBILE VIEW (BOTTOM NAV) ==================== -->
-    <div class="md:hidden flex flex-col h-full overflow-hidden">
+    <div class="md:hidden flex flex-col h-full overflow-hidden" style="display:flex; position:fixed; top:0; left:0; right:0; bottom:0; z-index:100; background:#121212;">
         <header class="h-14 border-b border-base flex items-center px-6 justify-between bg-card relative">
             <h1 class="text-sm font-bold tracking-tight text-white uppercase tracking-widest">Nexus</h1>
             <div class="flex items-center gap-3">
@@ -1607,25 +1570,14 @@
             const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
             if (!input || !input.value.trim()) return;
             const command = input.value.trim();
-            const logFeed = document.getElementById('log-feed') || document.querySelector('#mobile-content #log-feed');
-            const syncStatus = document.getElementById('sync-status');
-            if (logFeed) {
-                const entry = document.createElement('div');
-                entry.className = 'flex gap-2';
-                entry.innerHTML = `<span class="text-yellow-500">[SYS]</span> <span class="text-gray-400">[${new Date().toLocaleTimeString()}] ${command}</span>`;
-                logFeed.appendChild(entry);
-                logFeed.scrollTop = logFeed.scrollHeight;
+            if (typeof supabase !== 'undefined') {
+                const sb = supabase.createClient('https://ypzudkxowpxvdggvongz.supabase.co', 'sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b');
+                sb.from('nexus_bus').insert([{ emisor: 'MAESTRA', receptor: 'Zapia-Alpha', mensaje: command, status: 'pending' }]).then(({error}) => {
+                    if (!error) input.value = '';
+                });
+            } else {
+                input.value = '';
             }
-            if (syncStatus) {
-                syncStatus.textContent = 'Comando procesado';
-                syncStatus.classList.add('text-green-400');
-                setTimeout(() => {
-                    syncStatus.textContent = 'Real-time sync';
-                    syncStatus.classList.remove('text-green-400');
-                }, 2000);
-            }
-            if (command.startsWith('/')) executeSlashCommand(command);
-            input.value = '';
         }
 
         // =============================================
@@ -1736,39 +1688,5 @@
             loadMonitorConversation
         };
     </script>
-
-<script>
-    window.addEventListener('load', () => {
-        const sb = supabase.createClient('https://ypzudkxowpxvdggvongz.supabase.co', 'sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b');
-        
-        // Re-vincular botones de navegación por si se rompieron
-        document.querySelectorAll('button[onclick*="showSection"]').forEach(btn => {
-            const sectionId = btn.getAttribute('onclick').match(/'([^']+)'/)[1];
-            btn.onclick = (e) => {
-                e.preventDefault();
-                if (typeof showSection === 'function') showSection(sectionId);
-            };
-        });
-
-        // Re-vincular ejecutar
-        const execBtn = document.querySelector('button[onclick*="executeOrchestratorCommand"]');
-        if (execBtn) {
-            execBtn.onclick = async (e) => {
-                e.preventDefault();
-                const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
-                if (input && input.value.trim()) {
-                    await sb.from('nexus_bus').insert([{ 
-                        emisor: 'MAESTRA', 
-                        receptor: 'Zapia-Alpha', 
-                        mensaje: input.value.trim(), 
-                        status: 'pending' 
-                    }]);
-                    input.value = '';
-                    alert('Orden enviada');
-                }
-            };
-        }
-    });
-</script>
 </body>
 </html>
