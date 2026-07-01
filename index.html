@@ -143,56 +143,7 @@
             border-bottom-color: #60a5fa;
         }
     </style>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        // --- NEXUS LIVE ENGINE ---
-        const SB_URL = 'https://ypzudkxowpxvdggvongz.supabase.co';
-        const SB_KEY = 'sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b';
-        const sb = supabase.createClient(SB_URL, SB_KEY);
-
-        function initNexusConnection() {
-            console.log('Nexus Motor Activado');
-            sb.channel('nexus_bus').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'nexus_bus' }, p => {
-                const logFeed = document.getElementById('log-feed') || document.querySelector('#mobile-content #log-feed');
-                if (logFeed) {
-                    const entry = document.createElement('div');
-                    entry.className = 'flex gap-2';
-                    entry.innerHTML = '<span class="text-green-500">[' + p.new.emisor + ']</span> <span class="text-gray-300">' + p.new.mensaje + '</span>';
-                    logFeed.appendChild(entry);
-                }
-            }).subscribe();
-        }
-
-        // Esta es la función que llama el botón EJECUTAR
-        async function executeOrchestratorCommand() {
-            const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
-            if (!input || !input.value.trim()) return;
-            const command = input.value.trim();
-            
-            console.log('Enviando a Supabase:', command);
-            
-            const { error } = await sb.from('nexus_bus').insert([{ 
-                emisor: 'MAESTRA', 
-                receptor: 'Zapia-Alpha', 
-                mensaje: command,
-                status: 'pending' 
-            }]);
-            
-            if (error) {
-                console.error('Error Supabase:', error);
-                alert('Error al enviar: ' + error.message);
-            } else {
-                input.value = '';
-            }
-        }
-
-        window.addEventListener('load', () => {
-            if(typeof init === 'function') init();
-            initNexusConnection();
-        });
-    </script>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
@@ -497,7 +448,21 @@
     </div>
 
     <script>
-        // =============================================
+        
+        // --- CONEXIÓN NEXUS V20 ---
+        const SB_URL = 'https://ypzudkxowpxvdggvongz.supabase.co';
+        const SB_KEY = 'sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b';
+        const sb = supabase.createClient(SB_URL, SB_KEY);
+
+        function initNexusConnection() {
+            sb.channel('nexus_bus').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'nexus_bus' }, p => {
+                if (window.addLog) {
+                    addLog('[' + p.new.emisor + ']: ' + p.new.mensaje);
+                }
+            }).subscribe();
+        }
+
+// =============================================
         // 🗄️ BASE DE DATOS SIMULADA - METADATA COMPLETA DE CADA AGENTE
         // =============================================
         // Esto simula lo que vendría de una API/DB real.
@@ -1615,16 +1580,36 @@
         // =============================================
         // 🎭 ORQUESTADOR
         // =============================================
-        function executeOrchestratorCommand() {
-            const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
+        
+        async function executeOrchestratorCommand() {
+            // Buscar todos los inputs (escritorio y móvil)
+            const inputs = document.querySelectorAll('#orchestrator-input');
+            let input = null;
+            for(const i of inputs) { if(i.value.trim()) { input = i; break; } }
+            if(!input) { for(const i of inputs) { if(i.offsetWidth > 0) { input = i; break; } } }
+            
             if (!input || !input.value.trim()) return;
             const command = input.value.trim();
-            const logFeed = document.getElementById('log-feed') || document.querySelector('#mobile-content #log-feed');
-            const syncStatus = document.getElementById('sync-status');
-            if (logFeed) {
-                const entry = document.createElement('div');
-                entry.className = 'flex gap-2';
-                entry.innerHTML = `<span class="text-yellow-500">[SYS]</span> <span class="text-gray-400">[${new Date().toLocaleTimeString()}] ${command}</span>`;
+            
+            // Inyectar visualmente en el log para feedback inmediato
+            if (typeof addLog === 'function') addLog('[SISTEMA] Enviando orden: ' + command);
+            
+            const { error } = await sb.from('nexus_bus').insert([{ 
+                emisor: 'MAESTRA', 
+                receptor: 'Zapia-Alpha', 
+                mensaje: command,
+                status: 'pending' 
+            }]);
+            
+            if (error) {
+                console.error('Error:', error);
+                if (typeof addLog === 'function') addLog('[ERROR] No se pudo enviar la orden');
+            } else {
+                input.value = '';
+                if (typeof addLog === 'function') addLog('[SISTEMA] Orden recibida por el Bus');
+            }
+        }
+] ${command}</span>`;
                 logFeed.appendChild(entry);
                 logFeed.scrollTop = logFeed.scrollHeight;
             }
@@ -1725,7 +1710,7 @@
             document.getElementById('drawer-agent-name')?.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
             });
-            console.log('🚀 Zapia Nexus v3.1.2 inicializado');
+            initNexusConnection(); console.log('🚀 Zapia Nexus v3.1.2 inicializado');
             console.log('🔐 30 agentes con metadata completa');
             console.log('🔗 Servicios: Google, Facebook, WhatsApp, Telegram, IA, BD, CRM, etc.');
             console.log('💡 Ctrl+1-4: Navegar | Ctrl+K: Chat | Esc: Cerrar paneles');
