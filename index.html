@@ -143,7 +143,6 @@
             border-bottom-color: #60a5fa;
         }
     </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
@@ -1566,16 +1565,10 @@
         // =============================================
         // 🎭 ORQUESTADOR
         // =============================================
-        async function executeOrchestratorCommand() {
+        function executeOrchestratorCommand() {
             const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
             if (!input || !input.value.trim()) return;
             const command = input.value.trim();
-            
-            // --- CONEXIÓN SUPABASE ---
-            const sb = supabase.createClient('https://ypzudkxowpxvdggvongz.supabase.co', 'sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b');
-            await sb.from('nexus_bus').insert([{ emisor: 'MAESTRA', receptor: 'Zapia-Alpha', mensaje: command, status: 'pending' }]);
-            // -------------------------
-
             const logFeed = document.getElementById('log-feed') || document.querySelector('#mobile-content #log-feed');
             const syncStatus = document.getElementById('sync-status');
             if (logFeed) {
@@ -1586,7 +1579,7 @@
                 logFeed.scrollTop = logFeed.scrollHeight;
             }
             if (syncStatus) {
-                syncStatus.textContent = 'Enviado a Azure';
+                syncStatus.textContent = 'Comando procesado';
                 syncStatus.classList.add('text-green-400');
                 setTimeout(() => {
                     syncStatus.textContent = 'Real-time sync';
