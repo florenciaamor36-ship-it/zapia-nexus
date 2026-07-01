@@ -143,7 +143,56 @@
             border-bottom-color: #60a5fa;
         }
     </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // --- NEXUS LIVE ENGINE ---
+        const SB_URL = 'https://ypzudkxowpxvdggvongz.supabase.co';
+        const SB_KEY = 'sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b';
+        const sb = supabase.createClient(SB_URL, SB_KEY);
+
+        function initNexusConnection() {
+            console.log('Nexus Motor Activado');
+            sb.channel('nexus_bus').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'nexus_bus' }, p => {
+                const logFeed = document.getElementById('log-feed') || document.querySelector('#mobile-content #log-feed');
+                if (logFeed) {
+                    const entry = document.createElement('div');
+                    entry.className = 'flex gap-2';
+                    entry.innerHTML = '<span class="text-green-500">[' + p.new.emisor + ']</span> <span class="text-gray-300">' + p.new.mensaje + '</span>';
+                    logFeed.appendChild(entry);
+                }
+            }).subscribe();
+        }
+
+        // Esta es la función que llama el botón EJECUTAR
+        async function executeOrchestratorCommand() {
+            const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
+            if (!input || !input.value.trim()) return;
+            const command = input.value.trim();
+            
+            console.log('Enviando a Supabase:', command);
+            
+            const { error } = await sb.from('nexus_bus').insert([{ 
+                emisor: 'MAESTRA', 
+                receptor: 'Zapia-Alpha', 
+                mensaje: command,
+                status: 'pending' 
+            }]);
+            
+            if (error) {
+                console.error('Error Supabase:', error);
+                alert('Error al enviar: ' + error.message);
+            } else {
+                input.value = '';
+            }
+        }
+
+        window.addEventListener('load', () => {
+            if(typeof init === 'function') init();
+            initNexusConnection();
+        });
+    </script>
+
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
@@ -448,32 +497,6 @@
     </div>
 
     <script>
-
-        // =============================================
-        // 🛰️ CONEXIÓN REAL - SUPABASE
-        // =============================================
-        const SB_URL = "https://ypzudkxowpxvdggvongz.supabase.co";
-        const SB_KEY = "sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b";
-        const sb = supabase.createClient(SB_URL, SB_KEY);
-
-        function initNexusConnection() {
-            sb.channel('nexus_bus').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'nexus_bus' }, payload => {
-                if (window.addLog) {
-                    addLog('[' + payload.new.emisor + ']: ' + payload.new.mensaje);
-                }
-            }).subscribe();
-        }
-
-        async function nexusSendOrder(content) {
-            const { error } = await sb.from('nexus_bus').insert([{ 
-                emisor: 'USER_PANEL', 
-                receptor: 'Zapia-Alpha', 
-                mensaje: content,
-                status: 'pending' 
-            }]);
-            if (error) console.error('Error al enviar:', error);
-        }
-
         // =============================================
         // 🗄️ BASE DE DATOS SIMULADA - METADATA COMPLETA DE CADA AGENTE
         // =============================================
@@ -1596,16 +1619,12 @@
             const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
             if (!input || !input.value.trim()) return;
             const command = input.value.trim();
-            
-            // 1. Mostrar en el log local inmediatamente
-            if (typeof addLog === 'function') addLog('[SYS] Enviando orden: ' + command);
-            
-            // 2. Enviar a Supabase
-            nexusSendOrder(command);
-            
-            // 3. Limpiar input
-            input.value = '';
-        }] ${command}</span>`;
+            const logFeed = document.getElementById('log-feed') || document.querySelector('#mobile-content #log-feed');
+            const syncStatus = document.getElementById('sync-status');
+            if (logFeed) {
+                const entry = document.createElement('div');
+                entry.className = 'flex gap-2';
+                entry.innerHTML = `<span class="text-yellow-500">[SYS]</span> <span class="text-gray-400">[${new Date().toLocaleTimeString()}] ${command}</span>`;
                 logFeed.appendChild(entry);
                 logFeed.scrollTop = logFeed.scrollHeight;
             }
