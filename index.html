@@ -449,13 +449,13 @@
 
     <script>
         
-        // --- CONEXIÓN NEXUS V20 ---
+        // --- NEXUS ENGINE V21 ---
         const SB_URL = 'https://ypzudkxowpxvdggvongz.supabase.co';
         const SB_KEY = 'sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b';
-        const sb = supabase.createClient(SB_URL, SB_KEY);
+        const sb_client = supabase.createClient(SB_URL, SB_KEY);
 
         function initNexusConnection() {
-            sb.channel('nexus_bus').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'nexus_bus' }, p => {
+            sb_client.channel('nexus_bus').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'nexus_bus' }, p => {
                 if (window.addLog) {
                     addLog('[' + p.new.emisor + ']: ' + p.new.mensaje);
                 }
@@ -1580,21 +1580,17 @@
         // =============================================
         // 🎭 ORQUESTADOR
         // =============================================
-        
         async function executeOrchestratorCommand() {
-            // Buscar todos los inputs (escritorio y móvil)
-            const inputs = document.querySelectorAll('#orchestrator-input');
-            let input = null;
-            for(const i of inputs) { if(i.value.trim()) { input = i; break; } }
-            if(!input) { for(const i of inputs) { if(i.offsetWidth > 0) { input = i; break; } } }
-            
+            const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
             if (!input || !input.value.trim()) return;
             const command = input.value.trim();
+            const syncStatus = document.getElementById('sync-status');
             
-            // Inyectar visualmente en el log para feedback inmediato
-            if (typeof addLog === 'function') addLog('[SISTEMA] Enviando orden: ' + command);
+            // 1. Feedback inmediato en el Log
+            if (typeof addLog === 'function') addLog('[SISTEMA] Enviando: ' + command);
             
-            const { error } = await sb.from('nexus_bus').insert([{ 
+            // 2. Enviar a Supabase
+            const { error } = await sb_client.from('nexus_bus').insert([{ 
                 emisor: 'MAESTRA', 
                 receptor: 'Zapia-Alpha', 
                 mensaje: command,
@@ -1603,26 +1599,22 @@
             
             if (error) {
                 console.error('Error:', error);
-                if (typeof addLog === 'function') addLog('[ERROR] No se pudo enviar la orden');
+                if (typeof addLog === 'function') addLog('[ERROR] Falló el envío');
             } else {
+                if (typeof addLog === 'function') addLog('[OK] Recibido por el Bus');
                 input.value = '';
-                if (typeof addLog === 'function') addLog('[SISTEMA] Orden recibida por el Bus');
+                if (syncStatus) {
+                    syncStatus.textContent = 'Enviado con éxito';
+                    syncStatus.classList.add('text-green-400');
+                    setTimeout(() => {
+                        syncStatus.textContent = 'Real-time sync';
+                        syncStatus.classList.remove('text-green-400');
+                    }, 2000);
+                }
             }
-        }
-] ${command}</span>`;
-                logFeed.appendChild(entry);
-                logFeed.scrollTop = logFeed.scrollHeight;
-            }
-            if (syncStatus) {
-                syncStatus.textContent = 'Comando procesado';
-                syncStatus.classList.add('text-green-400');
-                setTimeout(() => {
-                    syncStatus.textContent = 'Real-time sync';
-                    syncStatus.classList.remove('text-green-400');
-                }, 2000);
-            }
+            
+            // 3. Soporte para comandos slash
             if (command.startsWith('/')) executeSlashCommand(command);
-            input.value = '';
         }
 
         // =============================================
