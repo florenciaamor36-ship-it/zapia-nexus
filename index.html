@@ -1,320 +1,93 @@
-<!DOCTYPE html>
-<html lang="es" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zapia Nexus - Panel Maestro</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter for a modern, clean look -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body class="flex flex-col h-screen overflow-hidden">
+<!DOCTYPE html><html lang='es' data-theme='dark'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1.0'><title>La Clave Academy | v197</title><link href='https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css' rel='stylesheet'/><script src='https://cdn.tailwindcss.com'></script><style>
+body{font-family:sans-serif;background:#000;color:#fff;scroll-behavior:smooth}
+.nav-g{background:rgba(0,0,0,.95);backdrop-filter:blur(15px);border-bottom:1px solid #1a1a1a}
+.card-c{background:#0a0a0a;border:1px solid #1a1a1a;border-radius:28px;overflow:hidden;transition:.3s;height:100%;display:flex;flex-direction:column}
+.card-c:hover{border-color:red;transform:translateY(-8px)}
+.img-c{height:140px;background:#050505;display:flex;align-items:center;justify-content:center;padding:20px}
+.img-c img{max-width:85%;max-height:85%;object-fit:contain}
+.menu-r{background:#050505;border-right:1px solid #1a1a1a;padding:1.5rem;width:300px!important}
+.cat-i{border-radius:12px;margin-bottom:4px;font-weight:700;font-size:13px;color:#a1a1aa;text-align:left;text-transform:uppercase;padding:.8rem 1.2rem}
+.cat-i:hover{background:#111!important;color:#fff!important}
+.cat-a{background:red!important;color:#fff!important}
+iframe.skiptranslate, .skiptranslate, .goog-te-banner-frame, .goog-te-gadget, #google_translate_element, .goog-te-balloon-frame, #goog-gt-tt, .goog-te-spinner-pos, .goog-te-spinner{ display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+body { top: 0px !important; }
+font { background-color: transparent !important; box-shadow: none !important; color: inherit !important; font-family: inherit !important; }
 
-    <!-- TOAST CONTAINER -->
-    <div id="toast-container" class="fixed top-4 right-4 z-[200] space-y-2 pointer-events-none"></div>
+/* BANNER v197 - ESTILO CINTA ADAPTATIVA CON ALTO FIJO */
+.b-strip {
+    width: 95% !important;
+    max-width: 800px !important;
+    height: 70px !important; /* FIJO EN MOVIL */
+    margin: 10px auto 30px auto !important;
+    position: relative !important;
+    overflow: hidden !important;
+    border: 3px solid #ff0000 !important; /* BORDE ROJO TEST */
+    border-radius: 12px !important;
+    background: #111 !important;
+}
+@media (min-width: 768px) {
+    .b-strip { height: 110px !important; }
+}
+.b-slide {
+    position: absolute !important;
+    top: 0; left: 0; width: 100%; height: 100%;
+    opacity: 0;
+    transition: opacity 0.8s ease-in-out !important;
+}
+.b-slide.active { opacity: 1 !important; }
+.b-slide img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: fill !important; /* Forzar estiramiento horizontal */
+}
+</style>
+<script type='text/javascript'>
+function googleTranslateElementInit(){
+  new google.translate.TranslateElement({pageLanguage:'en',includedLanguages:'es',autoDisplay:false}, 'google_translate_element');
+  setTimeout(function(){
+    var s = document.querySelector('select.goog-te-combo');
+    if(s){ s.value = 'es'; s.dispatchEvent(new Event('change')); }
+  }, 1200);
+}
+</script>
+<script type='text/javascript' src='//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit'></script>
+</head><body><div id='google_translate_element' style='display:none!important'></div><div class='drawer'><input id='dr' type='checkbox' class='drawer-toggle'/><div class='drawer-content flex flex-col'><div class='navbar w-full nav-g sticky top-0 z-50 px-4 md:px-10 h-20 md:h-24'><div class='flex-none'><label for='dr' class='btn btn-square btn-ghost text-white text-2xl font-black'>☰</label></div><div class='flex-1 font-black text-white uppercase italic ml-2'>LA CLAVE <span class='text-red-600'>ARGENTINA</span></div><div class='flex-none hidden sm:flex gap-4 items-center border-l border-zinc-800 ml-4 pl-4 h-10'><div class='flex flex-col items-end'><span class='text-[8px] font-black text-zinc-500 uppercase'>Oficial v197</span><span class='text-xs font-bold text-white uppercase'>Tienda SSH</span></div></div></div><main class='min-h-screen text-center px-4 pt-12 pb-40'><div class='max-w-6xl mx-auto'><div class='inline-block px-6 py-2 rounded-full border border-red-600/30 bg-red-600/5 text-red-600 text-[9px] font-black uppercase mb-4 italic'>Propiedad de La Clave Argentina v197</div>
 
-    <!-- ==================== AGENT DRAWER ==================== -->
-    <div id="agent-drawer" class="fixed inset-y-0 right-0 z-[100] w-full md:w-[480px] bg-card border-l border-base shadow-2xl translate-x-full" onclick="event.stopPropagation()">
-        <div class="h-full flex flex-col">
-            <!-- Drawer Header -->
-            <div class="p-4 border-b border-base flex justify-between items-center bg-zinc-800/30">
-                <div class="flex items-center gap-3">
-                    <div id="drawer-dot" class="agent-dot online"></div>
-                    <h3 id="drawer-agent-name" class="text-sm font-bold text-white agent-name-editable" contenteditable="true">Zapia Agent 01</h3>
-                </div>
-                <button onclick="closeAgentDrawer()" class="text-gray-400 hover:text-white text-lg" aria-label="Cerrar panel">&times;</button>
-            </div>
-            <!-- Drawer Content -->
-            <div class="flex-1 overflow-y-auto p-4 space-y-4 custom-scroll" id="drawer-content">
-                <!-- Se llena dinámicamente -->
-            </div>
-            <!-- Drawer Actions -->
-            <div class="p-4 border-t border-base bg-zinc-900/30 flex flex-wrap gap-2">
-                <button onclick="agentAction('restart')" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg text-xs font-bold transition min-w-[80px]">🔄 Reiniciar</button>
-                <button onclick="agentAction('pause')" class="flex-1 bg-yellow-600/20 text-yellow-400 py-2 rounded-lg text-xs font-bold border border-yellow-600/30 transition min-w-[80px]">⏸ Pausar</button>
-                <button onclick="agentAction('talk')" class="flex-1 bg-green-600/20 text-green-400 py-2 rounded-lg text-xs font-bold border border-green-600/30 transition min-w-[80px]">💬 Hablar</button>
-                <button onclick="agentAction('logs')" class="flex-1 bg-zinc-800 text-gray-300 py-2 rounded-lg text-xs font-bold border border-base transition min-w-[80px]">📋 Logs</button>
-                <button onclick="agentAction('unlink')" class="bg-red-600/20 text-red-400 py-2 px-3 rounded-lg text-xs font-bold border border-red-600/30 transition">🔗 Desvincular</button>
-            </div>
+<h1 class='text-4xl md:text-[100px] font-black uppercase tracking-tighter mb-4 leading-none'>LA CLAVE <br><span class='text-red-600'>ACADEMY</span></h1>
+
+<!-- BANNER v197 -->
+<div class='b-strip shadow-2xl'>
+    <div class='b-slide active'><a href="https://wa.me/5492235590910?text=Hola,%20vengo%20desde%20La%20Clave%20Academy%20y%20quiero%20m%C3%A1s%20informaci%C3%B3n" target="_blank"><img src="ad1.jpg?v=273" style="cursor:pointer;"></a></div>
+    <div class='b-slide'><a href="https://wa.me/5492235590910?text=Hola,%20vengo%20desde%20La%20Clave%20Academy%20y%20quiero%20m%C3%A1s%20informaci%C3%B3n" target="_blank"><img src="ad2.jpg?v=273" style="cursor:pointer;"></a></div>
+    <div class='b-slide'><a href="https://wa.me/5492235590910?text=Hola,%20vengo%20desde%20La%20Clave%20Academy%20y%20quiero%20m%C3%A1s%20informaci%C3%B3n" target="_blank"><img src="ad3.jpg?v=273" style="cursor:pointer;"></a></div>
+    <div class='b-slide'><a href="https://wa.me/5492235590910?text=Hola,%20vengo%20desde%20La%20Clave%20Academy%20y%20quiero%20m%C3%A1s%20informaci%C3%B3n" target="_blank"><img src="ad4.jpg?v=273" style="cursor:pointer;"></a></div>
+</div>
+
+<div class='max-w-4xl mx-auto mb-20 px-2'><div class='relative flex flex-col md:flex-row bg-zinc-950 border border-zinc-800 rounded-2xl md:rounded-full p-1.5 focus-within:border-red-600 gap-2'><input id='q' type='text' placeholder='¿UBA, UNMDP, MECÁNICA, ALBAÑIL...?' class='input w-full bg-transparent border-none focus:outline-none px-6 font-bold text-white uppercase' oninput='search()'/><button onclick='res()' class='btn btn-error rounded-xl md:rounded-full px-10 text-white font-black h-12'>EXPLORAR</button></div></div><div id='grid' class='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'></div><div class='mt-20 flex flex-col items-center gap-8 pb-20'><div class='join bg-zinc-900 border border-zinc-800 p-1.5 rounded-2xl'><button onclick='prevPage()' class='join-item btn btn-ghost text-zinc-500 font-black px-4 uppercase text-[10px]'>« ANT.</button><div id='pages' class='join flex gap-1 px-2'></div><button onclick='nextPage()' class='join-item btn btn-ghost text-zinc-500 font-black px-4 uppercase text-[10px]'>SIG. »</button></div><p id='counter' class='text-[10px] font-black text-zinc-600 uppercase'></p></div></div></main></div><div class='drawer-side z-[100]'><label for='dr' class='drawer-overlay'></label><div class='menu-r min-h-full flex flex-col'><h3 class='text-2xl font-black italic text-white uppercase mb-10'>LA <span class='text-red-600'>CLAVE</span></h3><div class='flex-1 overflow-y-auto pr-2'><p class='text-[10px] font-black text-red-600 mb-6 uppercase'>Oficios & Salida Laboral</p><div class='flex flex-col gap-1 mb-8'><a onclick='cat("mecanica",event)' class='cat-i btn btn-ghost justify-start'>Mecánica Autos/Motos</a><a onclick='cat("construccion",event)' class='cat-i btn btn-ghost justify-start'>Albañilería & Pintura</a><a onclick='cat("plomeria",event)' class='cat-i btn btn-ghost justify-start'>Plomería & Gas</a><a onclick='cat("electricidad",event)' class='cat-i btn btn-ghost justify-start'>Electricidad</a><a onclick='cat("carpinteria",event)' class='cat-i btn btn-ghost justify-start'>Carpintería & Muebles</a><a onclick='cat("artes",event)' class='cat-i btn btn-ghost justify-start'>Manualidades & Murales</a><a onclick='cat("agro",event)' class='cat-i btn btn-ghost justify-start'>Agro & Campo</a></div><p class='text-[10px] font-black text-red-600 mb-6 uppercase'>Entidades Argentinas</p><div class='flex flex-col gap-1 mb-8'><a onclick='cat("unmdp",event)' class='cat-i btn btn-ghost justify-start'>UNMDP Mar del Plata</a><a onclick='cat("uba",event)' class='cat-i btn btn-ghost justify-start'>UBA Buenos Aires</a><a onclick='cat("balcarce",event)' class='cat-i btn btn-ghost justify-start'>Balcarce / Agro</a><a onclick='cat("oficial",event)' class='cat-i btn btn-ghost justify-start'>Capacitación Oficial</a></div><p class='text-[10px] font-black text-red-600 mb-6 uppercase'>General</p><div class='flex flex-col gap-1'><a onclick='cat("",event)' class='cat-i btn btn-ghost justify-start cat-a'>TODOS LOS CURSOS</a><a onclick='cat("ia",event)' class='cat-i btn btn-ghost justify-start'>IA</a><a onclick='cat("programacion",event)' class='cat-i btn btn-ghost justify-start'>Programación</a></div></div></div></div></div><script>
+let adIdx = 0;
+const slides = document.querySelectorAll('.b-slide');
+function rot() {
+    slides[adIdx].classList.remove('active');
+    adIdx = (adIdx + 1) % slides.length;
+    slides[adIdx].classList.add('active');
+}
+if(slides.length > 0) setInterval(rot, 4000);
+
+const K='sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b',U='https://ypzudkxowpxvdggvongz.supabase.co/rest/v1/cursos';let page=1,q='',c='',limit=16;async function load(){const g=document.getElementById('grid'),p=document.getElementById('pages');g.innerHTML='<div class="col-span-full py-40 text-red-600 font-black animate-pulse text-[10px]">SINCRONIZANDO...</div>';let url=U+'?select=*&limit='+limit+'&offset='+((page-1)*limit)+'&order=plataforma.asc,titulo.asc';if(q)url+='&or=(titulo.ilike.*'+encodeURIComponent(q)+'*,descripcion.ilike.*'+encodeURIComponent(q)+'*,plataforma.ilike.*'+encodeURIComponent(q)+'*)';if(c){const m={mecanica:'auto,moto,mecanic,taller,motor,carro,vehiculo',construccion:'albañil,pintur,construc,revoque,ladrillo,arquitectura',plomeria:'plomer,gasist,cañeria,griferia,instalacion sanitaria',electricidad:'electricid,electrotec,tension,cable,electricista',carpinteria:'carpinter,mueble,madera,ebanist',agro:'agro,campo,veterinari,cultivo,siembra,cosecha,agronomo',artes:'manualidad,mural,serigrafia,arte,artista,pintura decorativa',unmdp:'unmdp,mar del plata,mdp,universidad nacional de mar del plata',uba:'uba,buenos aires,uba.ar,universidad de buenos aires',balcarce:'balcarce,inta,balcarce agropecuaria',oficial:'nacional,oficial,gobierno,argentina.gob.ar',ia:'ia,inteligencia artificial',programacion:'programacion,dev,codigo,desarrollo'};if(m[c]){const terms=m[c].split(',');let filters=terms.map(t=>`titulo.ilike.*${t}*,plataforma.ilike.*${t}*`).join(',');url+='&or=('+filters+')';if(c==='mecanica')url+='&titulo.not.ilike.*automatización*';}}try{const r=await fetch(url,{headers:{'apikey':K,'Authorization':'Bearer '+K}});const d=await r.json();g.innerHTML='';if(!d||!d.length){g.innerHTML='<div class="col-span-full py-20 text-white font-black text-center uppercase">No hay resultados.</div>';return}d.forEach(x=>{const ytb='https://raw.githubusercontent.com/florenciaamor36-ship-it/cursin-v2-oficial/main/youtube_fallback.jpg',san='https://raw.githubusercontent.com/florenciaamor36-ship-it/cursin-v2-plataforma/main/santander_custom.jpg',img=(x.plataforma&&x.plataforma.toLowerCase().includes('santander'))?san:(x.imagen_url||ytb);let s='';for(let i=0;i<5;i++)s+='<span class="'+(i<(x.puntuacion||5)?'text-yellow-400':'text-zinc-800')+'" style="font-size:10px">★</span>';g.innerHTML+=`<div class='card-c'><div class='img-c'><img src='${img}' onerror="this.src='${ytb}'"></div><div class='p-6 flex flex-col flex-1 text-left'><div class='flex justify-between items-center mb-6 text-[9px] font-black uppercase'><span class='bg-red-600/10 text-red-600 px-2 py-1 rounded'>ENTIDAD: ${x.plataforma.toUpperCase()}</span><div>${s}</div></div><h3 class='text-sm font-black text-white mb-8 min-h-[4rem] line-clamp-3 uppercase'>${x.titulo}</h3><a href='${x.url}' target='_blank' class='btn btn-block btn-sm btn-error text-white font-black mt-auto rounded-xl uppercase italic text-[11px] h-10'>ACCEDER</a></div></div>`});p.innerHTML='';const start=Math.max(1,page-2);for(let i=start; i<=start+4; i++)p.innerHTML+=`<button onclick='setPage(${i})' class='btn btn-square btn-sm ${i===page?"btn-error text-white":"btn-ghost text-zinc-500"} font-black text-xs rounded-xl'>${i}</button>`;document.getElementById('counter').innerText='PÁGINA '+page}catch(e){g.innerHTML='ERROR'}}function search(){clearTimeout(window.t);window.t=setTimeout(()=>{q=document.getElementById('q').value;page=1;load()},600)}function res(){q=document.getElementById('q').value;page=1;load()}function setPage(n){page=n;load();window.scrollTo({top:0,behavior:'smooth'})}function nextPage(){page++;load();window.scrollTo({top:0,behavior:'smooth'})}function prevPage(){if(page>1){page--;load();window.scrollTo({top:0,behavior:'smooth'})}}function cat(cat,e){c=cat;q='';page=1;load();document.getElementById('dr').checked=false;document.querySelectorAll('.cat-i').forEach(x=>x.classList.remove('cat-a'));if(e)e.target.classList.add('cat-a')}load()
+</script>
+<footer class='bg-zinc-950 border-t border-zinc-900 pt-20 pb-10 px-6 mt-20'>
+    <div class='max-w-6xl mx-auto'>
+        <div class='grid grid-cols-1 lg:grid-cols-3 gap-12 mb-20 text-center lg:text-left'>
+            <div><h5 class='text-white font-black uppercase italic mb-4'>Quiénes Somos</h5><p class='text-zinc-600 text-[10px] font-bold uppercase'>Colectivo Argentino democratizando la formación técnica profesional.</p></div>
+            <div><h5 class='text-white font-black uppercase italic mb-4'>Objetivo</h5><p class='text-zinc-600 text-[10px] font-bold uppercase'>Educación gratuita sin barreras para todos.</p></div>
+            <div><h5 class='text-white font-black uppercase italic mb-4'>Créditos</h5><p class='text-zinc-600 text-[10px] font-bold uppercase'>Desarrollado por <span class='text-red-600'>La Clave Argentina</span> & <span class='text-white'>Tienda SSH</span>.</p></div>
         </div>
+        <div class='text-center opacity-40 mb-10'><p class='text-[9px] text-zinc-500 font-black uppercase'>v273 - laclaveacademy.pp.ua</p></div>
     </div>
+</footer>
+</body></html>
 
-    <!-- Overlay for drawer -->
-    <div id="drawer-overlay" class="hidden fixed inset-0 z-[99] bg-black/40" onclick="closeAgentDrawer()"></div>
 
-    <!-- ==================== DESKTOP SIDEBAR ==================== -->
-    <div class="hidden md:flex flex-row flex-1 overflow-hidden">
-        <aside class="w-64 bg-card border-r border-base flex flex-col">
-            <div class="p-6 border-b border-base">
-                <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                    <span class="text-blue-500"><i class="fas fa-layer-group"></i></span> Nexus
-                </h1>
-            </div>
-            <nav class="flex-1 p-4 space-y-1" id="desktop-nav">
-                <button onclick="showSection('dashboard')" data-section="dashboard" class="nav-link active w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium hover:bg-zinc-800 transition" aria-label="Ir al Dashboard">
-                    <i class="fas fa-chart-line w-5"></i> Dashboard
-                </button>
-                <button onclick="showSection('orchestrator')" data-section="orchestrator" class="nav-link w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium hover:bg-zinc-800 transition" aria-label="Ir al Orquestador">
-                    <i class="fas fa-project-diagram w-5"></i> Orquestador
-                </button>
-                <button onclick="showSection('agents')" data-section="agents" class="nav-link w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium hover:bg-zinc-800 transition" aria-label="Ir a Agentes">
-                    <i class="fas fa-robot w-5"></i> Agentes
-                </button>
-                <button onclick="showSection('chat')" data-section="chat" class="nav-link w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium hover:bg-zinc-800 transition" aria-label="Ir al Chat">
-                    <i class="fas fa-comments w-5"></i> Chat
-                </button>
-            </nav>
-            <div class="p-4 border-t border-base">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold" aria-label="Avatar de Florencia A.">FA</div>
-                    <div class="text-xs">
-                        <p class="text-white font-semibold">Florencia A.</p>
-                        <p class="text-gray-500">PSA Admin</p>
-                    </div>
-                </div>
-            </div>
-        </aside>
 
-        <!-- ==================== MAIN CONTENT AREA ==================== -->
-        <main class="flex-1 flex flex-col overflow-hidden relative">
-            <!-- Header -->
-            <header class="h-16 border-b border-base flex items-center justify-between px-8 bg-card/50 backdrop-blur-md">
-                <h2 id="section-title" class="text-lg font-semibold text-white">Dashboard Maestro</h2>
-                <div class="flex items-center gap-4">
-                    <span class="text-[10px] bg-green-900/30 text-green-400 px-2 py-1 rounded border border-green-800/50 uppercase font-bold tracking-widest">System Live</span>
-                    <!-- Notificaciones Desktop -->
-                    <div class="relative">
-                        <button id="notif-btn" class="text-gray-400 hover:text-white relative" onclick="toggleNotifications()" aria-label="Notificaciones">
-                            <i class="fas fa-bell"></i>
-                            <span id="notif-badge" class="hidden absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-[8px] rounded-full flex items-center justify-center font-bold">0</span>
-                        </button>
-                        <div id="notif-dropdown" class="hidden absolute right-0 top-8 w-80 bg-card border border-base rounded-xl shadow-2xl z-[150] p-4 space-y-3">
-                            <div class="flex justify-between items-center">
-                                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Alertas</p>
-                                <button onclick="clearNotifications()" class="text-[9px] text-blue-500 hover:underline">Limpiar</button>
-                            </div>
-                            <div id="notif-list" class="space-y-2 max-h-60 overflow-y-auto custom-scroll">
-                                <p class="text-[10px] text-gray-600 text-center py-4">No hay notificaciones</p>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Exportar -->
-                    <button onclick="exportData()" class="text-gray-400 hover:text-white text-sm" title="Exportar datos" aria-label="Exportar datos">
-                        <i class="fas fa-download"></i>
-                    </button>
-                </div>
-            </header>
 
-            <!-- Sections Container -->
-            <div class="flex-1 overflow-y-auto p-8 space-y-8 pb-20 md:pb-8 custom-scroll" id="sections-container">
 
-                <!-- ==================== SECTION: DASHBOARD ==================== -->
-                <section id="section-dashboard" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="bg-card border border-base p-6 rounded-xl">
-                            <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Mensajes / 24h</p>
-                            <h3 class="text-3xl font-light text-white">12,482 <span class="text-sm text-green-500">+14%</span></h3>
-                        </div>
-                        <div class="bg-card border border-base p-6 rounded-xl">
-                            <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Salud de Red</p>
-                            <h3 class="text-3xl font-light text-white">93.4% <span class="text-xs text-gray-500">v3.1.2</span></h3>
-                        </div>
-                        <div class="bg-card border border-base p-6 rounded-xl">
-                            <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-2">Latencia IA</p>
-                            <h3 class="text-3xl font-light text-blue-400">14ms</h3>
-                        </div>
-                    </div>
-                    <!-- Resumen rápido de agentes -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="dashboard-agent-summary">
-                        <!-- Se llena dinámicamente -->
-                    </div>
-                </section>
-
-                <!-- ==================== SECTION: ORCHESTRATOR ==================== -->
-                <section id="section-orchestrator" class="hidden h-full flex flex-col gap-4">
-                    <div class="bg-card border border-base rounded-xl flex-1 flex flex-col overflow-hidden shadow-2xl">
-                        <div class="p-4 border-b border-base bg-zinc-800/20 flex justify-between items-center">
-                            <span class="text-xs font-mono text-blue-400">inter_agent_bus_v1.log</span>
-                            <span id="sync-status" class="text-[10px] text-gray-500">Real-time sync</span>
-                        </div>
-                        <div id="log-feed" class="flex-1 p-6 overflow-y-auto font-mono text-[11px] space-y-3 custom-scroll">
-                            <div class="flex gap-2"><span class="text-blue-500">[ZAIRA-V01]</span> <span class="text-gray-400">Iniciando consulta técnica para el cliente +549...</span></div>
-                            <div class="flex gap-2"><span class="text-purple-500">[SOPORTE-IA]</span> <span class="text-gray-400">Recibido. Accediendo a Supabase/knowledge_base...</span></div>
-                            <div class="flex gap-2"><span class="text-purple-500">[SOPORTE-IA]</span> <span class="text-gray-400">Resolución encontrada. Transfiriendo respuesta a ZAIRA...</span></div>
-                            <div class="flex gap-2"><span class="text-green-500">[ZAIRA-V01]</span> <span class="text-gray-300 font-bold">Respuesta entregada al usuario vía WhatsApp.</span></div>
-                        </div>
-                        <div class="p-4 bg-zinc-900/50 border-t border-base flex gap-3">
-                            <input type="text" id="orchestrator-input" placeholder="Inyectar orden global... (usá /comandos)" class="flex-1 bg-black/50 border border-base rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500 transition" onkeydown="if(event.key==='Enter')executeOrchestratorCommand()" aria-label="Comando del orquestador">
-                            <button onclick="executeOrchestratorCommand()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg text-sm font-bold transition" aria-label="Ejecutar comando">EJECUTAR</button>
-                        </div>
-                        <div class="px-4 py-2 bg-zinc-900/20 border-t border-base flex gap-3 flex-wrap">
-                            <span class="text-[9px] text-gray-600">/reiniciar</span>
-                            <span class="text-[9px] text-gray-600">/stats</span>
-                            <span class="text-[9px] text-gray-600">/broadcast</span>
-                            <span class="text-[9px] text-gray-600">/logs</span>
-                            <span class="text-[9px] text-gray-600">/silenciar</span>
-                            <span class="text-[9px] text-gray-600">/exportar</span>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- ==================== SECTION: AGENTS ==================== -->
-                <section id="section-agents" class="hidden">
-                    <!-- Leyenda del semáforo -->
-                    <div class="flex flex-wrap gap-4 mb-4 text-[10px] text-gray-500">
-                        <span class="flex items-center gap-1"><span class="agent-dot online"></span> En línea</span>
-                        <span class="flex items-center gap-1"><span class="agent-dot syncing"></span> Sincronizando</span>
-                        <span class="flex items-center gap-1"><span class="agent-dot offline"></span> Fuera de línea</span>
-                        <span class="flex items-center gap-1"><span class="agent-dot working"></span> Trabajando</span>
-                    </div>
-                    <!-- Grid de agentes -->
-                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4" id="agents-grid">
-                        <!-- Dynamic Agents -->
-                    </div>
-                </section>
-
-                <!-- ==================== SECTION: CHAT ==================== -->
-                <section id="section-chat" class="hidden h-full flex flex-col gap-4">
-                    <div class="bg-card border border-base rounded-xl flex-1 flex flex-col overflow-hidden shadow-2xl">
-                        <!-- Chat Header con pestañas -->
-                        <div class="border-b border-base bg-zinc-800/20">
-                            <div class="flex">
-                                <button onclick="switchChatTab('zaira')" data-chat-tab="zaira" class="chat-tab active flex-1 py-3 text-xs font-bold text-blue-400 border-b-2 border-blue-500 bg-blue-500/5 transition">
-                                    💬 ZAIRA · Agente Principal
-                                </button>
-                                <button onclick="switchChatTab('bus')" data-chat-tab="bus" class="chat-tab flex-1 py-3 text-xs font-bold text-gray-500 border-b-2 border-transparent hover:text-gray-300 transition">
-                                    🔄 Bus de Agentes
-                                </button>
-                                <button onclick="switchChatTab('broadcast')" data-chat-tab="broadcast" class="chat-tab flex-1 py-3 text-xs font-bold text-gray-500 border-b-2 border-transparent hover:text-gray-300 transition">
-                                    📢 Broadcast
-                                </button>
-                                <button onclick="switchChatTab('monitor')" data-chat-tab="monitor" class="chat-tab flex-1 py-3 text-xs font-bold text-gray-500 border-b-2 border-transparent hover:text-gray-300 transition">
-                                    👁️ Monitor
-                                </button>
-                            </div>
-                        </div>
-                        <!-- Mensajes del chat -->
-                        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-3 custom-scroll">
-                            <!-- ZAIRA tab -->
-                            <div id="chat-tab-zaira" class="space-y-3">
-                                <div class="flex gap-2 chat-msg">
-                                    <div class="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-[8px] text-white font-bold flex-shrink-0">ZA</div>
-                                    <div class="bg-zinc-800 rounded-xl p-3 text-xs text-gray-300 max-w-[75%]">
-                                        <p>¡Hola! Soy ZAIRA, el agente principal. Podés darme instrucciones, preguntarme sobre el sistema o coordinar con otros agentes.</p>
-                                        <p class="text-[9px] text-gray-500 mt-1">Usá <code class="text-blue-400">/comandos</code> para ver las opciones disponibles.</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- BUS tab -->
-                            <div id="chat-tab-bus" class="hidden space-y-3">
-                                <div class="flex gap-2 chat-msg">
-                                    <div class="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center text-[8px] text-white font-bold flex-shrink-0">SI</div>
-                                    <div class="bg-zinc-800 rounded-xl p-3 text-xs text-gray-300 max-w-[75%]">
-                                        <p class="text-purple-400 text-[10px] font-bold">SOPORTE-IA → ZAIRA-V01</p>
-                                        <p>Recibido. Accediendo a Supabase/knowledge_base para la consulta #4821...</p>
-                                        <p class="text-[9px] text-gray-500 mt-1">Hace 2 min</p>
-                                    </div>
-                                </div>
-                                <div class="flex gap-2 chat-msg">
-                                    <div class="w-7 h-7 rounded-full bg-green-600 flex items-center justify-center text-[8px] text-white font-bold flex-shrink-0">VB</div>
-                                    <div class="bg-zinc-800 rounded-xl p-3 text-xs text-gray-300 max-w-[75%]">
-                                        <p class="text-green-400 text-[10px] font-bold">VENTAS-BOT → Todos</p>
-                                        <p>Cliente +549... tiene carrito abandonado. ¿Coordino oferta con SOPORTE-IA?</p>
-                                        <p class="text-[9px] text-gray-500 mt-1">Hace 5 min</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- BROADCAST tab -->
-                            <div id="chat-tab-broadcast" class="hidden space-y-3">
-                                <div class="flex gap-2 chat-msg">
-                                    <div class="w-7 h-7 rounded-full bg-yellow-600 flex items-center justify-center text-[8px] text-white font-bold flex-shrink-0">BC</div>
-                                    <div class="bg-yellow-600/10 border border-yellow-600/20 rounded-xl p-3 text-xs text-yellow-300 max-w-[75%]">
-                                        <p class="text-yellow-400 text-[10px] font-bold">BROADCAST · Sistema</p>
-                                        <p>Mantenimiento programado: domingo 03:00 UTC. Todos los agentes deben sincronizar estado antes del sábado 23:59.</p>
-                                        <p class="text-[9px] text-yellow-500/50 mt-1">Enviado a 30 agentes · Hace 1 hora</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- MONITOR tab -->
-                            <div id="chat-tab-monitor" class="hidden space-y-4">
-                                <div class="flex gap-2 items-center bg-zinc-800/50 rounded-lg p-2">
-                                    <span class="text-[10px] text-gray-500">Monitoreando:</span>
-                                    <select id="monitor-agent-select" onchange="loadMonitorConversation()" class="bg-black/50 border border-base rounded-lg px-2 py-1 text-[10px] text-white focus:outline-none focus:border-blue-500">
-                                        <option value="">Seleccionar agente...</option>
-                                    </select>
-                                    <span class="text-[9px] text-green-400 hidden" id="monitor-live-indicator">● LIVE</span>
-                                </div>
-                                <div id="monitor-conversation" class="space-y-3">
-                                    <p class="text-[10px] text-gray-600 text-center py-8">Seleccioná un agente para ver su conversación en tiempo real</p>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Input del chat -->
-                        <div class="p-4 border-t border-base bg-zinc-900/50 flex gap-2" id="chat-input-container">
-                            <input type="text" id="chat-input" placeholder="Escribí un mensaje o usá /comando..." class="flex-1 bg-black/50 border border-base rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500 transition" onkeydown="if(event.key==='Enter')sendChatMessage()" aria-label="Mensaje de chat">
-                            <button onclick="sendChatMessage()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition" aria-label="Enviar mensaje">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
-                    </div>
-                </section>
-
-            </div>
-        </main>
-    </div>
-
-    <!-- ==================== MOBILE VIEW (BOTTOM NAV) ==================== -->
-    <div class="md:hidden flex flex-col h-full overflow-hidden">
-        <header class="h-14 border-b border-base flex items-center px-6 justify-between bg-card relative">
-            <h1 class="text-sm font-bold tracking-tight text-white uppercase tracking-widest">Nexus</h1>
-            <div class="flex items-center gap-3">
-                <!-- Notificaciones Mobile -->
-                <div class="relative">
-                    <button id="mobile-notif-btn" class="text-gray-400 hover:text-white relative" onclick="toggleNotifications()" aria-label="Notificaciones">
-                        <i class="fas fa-bell"></i>
-                        <span id="mobile-notif-badge" class="hidden absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-[8px] rounded-full flex items-center justify-center font-bold">0</span>
-                    </button>
-                    <div id="mobile-notif-dropdown" class="hidden absolute right-0 top-8 w-72 bg-card border border-base rounded-xl shadow-2xl z-[200] p-4 space-y-3">
-                        <div class="flex justify-between items-center">
-                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Alertas</p>
-                            <button onclick="clearNotifications()" class="text-[9px] text-blue-500 hover:underline">Limpiar</button>
-                        </div>
-                        <div id="mobile-notif-list" class="space-y-2 max-h-60 overflow-y-auto custom-scroll">
-                            <p class="text-[10px] text-gray-600 text-center py-4">No hay notificaciones</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="status-online"><i class="fas fa-circle text-[10px] text-green-500 pulse rounded-full"></i></div>
-            </div>
-        </header>
-        <div class="flex-1 overflow-y-auto p-4 custom-scroll" id="mobile-content">
-            <!-- Mobile content rendered dynamically -->
-        </div>
-        <nav class="mobile-nav h-16 bg-card border-t border-base flex items-center justify-around z-50" id="mobile-nav">
-            <button onclick="showSection('dashboard')" data-section="dashboard" class="nav-link active flex flex-col items-center gap-1 text-blue-500" aria-label="Dashboard">
-                <i class="fas fa-th-large text-lg"></i>
-                <span class="text-[9px] font-bold uppercase">Dash</span>
-            </button>
-            <button onclick="showSection('orchestrator')" data-section="orchestrator" class="nav-link flex flex-col items-center gap-1 text-gray-500" aria-label="Orquestador">
-                <i class="fas fa-terminal text-lg"></i>
-                <span class="text-[9px] font-bold uppercase">Orch</span>
-            </button>
-            <button onclick="showSection('agents')" data-section="agents" class="nav-link flex flex-col items-center gap-1 text-gray-500" aria-label="Agentes">
-                <i class="fas fa-robot text-lg"></i>
-                <span class="text-[9px] font-bold uppercase">Agentes</span>
-            </button>
-            <button onclick="showSection('chat')" data-section="chat" class="nav-link flex flex-col items-center gap-1 text-gray-500" aria-label="Chat">
-                <i class="fas fa-comments text-lg"></i>
-                <span class="text-[9px] font-bold uppercase">Chat</span>
-            </button>
-        </nav>
-    </div>
-
-    <script src="script.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>const sb = supabase.createClient("https://ypzudkxowpxvdggvongz.supabase.co", "sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b"); window.addEventListener("load", () => { if(typeof init === "function") init(); });</script>
-</body>
-</html>
