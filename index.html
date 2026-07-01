@@ -144,7 +144,7 @@
             outline: none;
             border-bottom-color: #60a5fa;
         }
-    
+
         @media (max-width: 767px) {
             #mobile-nav {
                 position: fixed !important;
@@ -158,7 +158,6 @@
                 padding-bottom: 120px !important;
             }
         }
-    
     </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
@@ -471,7 +470,6 @@
         const SUPABASE_URL = 'https://ypzudkxowpxvdggvongz.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
         // =============================================
         // 🗄️ BASE DE DATOS SIMULADA - METADATA COMPLETA DE CADA AGENTE
         // =============================================
@@ -1590,7 +1588,7 @@
         // =============================================
         // 🎭 ORQUESTADOR
         // =============================================
-                async function executeOrchestratorCommand() {
+        async function executeOrchestratorCommand() {
             const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
             if (!input || !input.value.trim()) return;
             const command = input.value.trim();
@@ -1625,10 +1623,7 @@
             }
             if (command.startsWith('/')) executeSlashCommand(command);
             input.value = '';
-        }] ${command}</span>`;
-                logFeed.appendChild(entry);
-                logFeed.scrollTop = logFeed.scrollHeight;
-            }
+        }
             if (syncStatus) {
                 syncStatus.textContent = 'Comando procesado';
                 syncStatus.classList.add('text-green-400');
