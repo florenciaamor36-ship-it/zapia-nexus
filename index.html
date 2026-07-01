@@ -145,40 +145,53 @@
     </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <style>
-        /* --- MOBILE v26 DEFINITIVO --- */
-        @media (max-width: 768px) {
-            .flex.h-screen.bg-base { display: none !important; }
-            div.md\:hidden {
-                display: flex !important; flex-direction: column !important;
-                position: fixed !important; top: 0; left: 0; right: 0; bottom: 0;
-                height: 100vh !important; height: -webkit-fill-available !important;
-                background-color: #121212 !important; z-index: 50 !important;
-            }
-            nav#mobile-nav {
-                position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important;
-                width: 100% !important; height: 75px !important;
-                display: flex !important; flex-direction: row !important;
-                justify-content: space-around !important; align-items: center !important;
-                background-color: #1f1f1f !important; border-top: 1px solid #333 !important;
-                z-index: 10000 !important; padding-bottom: env(safe-area-inset-bottom);
-            }
-            nav#mobile-nav button.nav-link {
-                display: flex !important; flex-direction: column !important;
-                align-items: center !important; justify-content: center !important;
-                color: #9ca3af !important; background: transparent !important; border: none !important;
-                flex: 1 1 0% !important; height: 100% !important;
-            }
-            nav#mobile-nav button.nav-link.active { color: #60a5fa !important; }
-            nav#mobile-nav button.nav-link i { font-size: 22px !important; margin-bottom: 4px !important; }
-            nav#mobile-nav button.nav-link span { font-size: 10px !important; }
-            #mobile-content {
-                flex: 1 !important; overflow-y: auto !important;
-                padding: 12px !important; padding-bottom: 100px !important;
-                -webkit-overflow-scrolling: touch;
-            }
+<style>
+    @media (max-width: 768px) {
+        /* Ocultar versión escritorio */
+        body > div.flex.h-screen { display: none !important; }
+        
+        /* Forzar contenedor móvil */
+        div.md\:hidden {
+            display: flex !important;
+            flex-direction: column !important;
+            position: fixed !important;
+            top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+            height: 100vh !important;
+            z-index: 10 !important;
+            background: #121212 !important;
         }
-    </style>
+
+        /* Nav fijo abajo de todo */
+        #mobile-nav {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            height: 75px !important;
+            display: flex !important;
+            flex-direction: row !important;
+            justify-content: space-around !important;
+            align-items: center !important;
+            background: #1f1f1f !important;
+            border-top: 1px solid #333 !important;
+            z-index: 99999 !important;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .nav-link { 
+            display: flex !important; 
+            flex-direction: column !important; 
+            align-items: center !important; 
+            flex: 1 !important;
+        }
+
+        #mobile-content {
+            padding-bottom: 100px !important;
+            flex: 1 !important;
+            overflow-y: auto !important;
+        }
+    }
+</style>
 
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
@@ -484,33 +497,39 @@
     </div>
 
     <script>
-        
-        // --- MOTOR NEXUS V26 (DEFINITIVO) ---
+
+        // =============================================
+        // 🛰️ NEXUS CORE ENGINE - V27
+        // =============================================
         const SB_URL = 'https://ypzudkxowpxvdggvongz.supabase.co';
         const SB_KEY = 'sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b';
-        const sb_client = supabase.createClient(SB_URL, SB_KEY);
+        const nexus_sb = supabase.createClient(SB_URL, SB_KEY);
 
-        function initNexusConnection() {
-            sb_client.channel('nexus_bus').on('postgres_changes', {event:'INSERT', schema:'public', table:'nexus_bus'}, p => {
-                if (window.addLog) {
-                    addLog('[' + p.new.emisor + ']: ' + p.new.mensaje);
-                } else {
-                    const logFeed = document.getElementById('log-feed') || document.querySelector('#mobile-content #log-feed');
-                    if (logFeed) {
-                        const entry = document.createElement('div');
-                        entry.className = 'flex gap-2';
-                        entry.innerHTML = '<span class="text-blue-400">[' + p.new.emisor + ']</span> <span class="text-gray-300">' + p.new.mensaje + '</span>';
-                        logFeed.appendChild(entry);
-                        logFeed.scrollTop = logFeed.scrollHeight;
-                    }
+        function setupNexusBus() {
+            nexus_sb.channel('nexus_bus').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'nexus_bus' }, p => {
+                const log = document.getElementById('log-feed') || document.querySelector('#mobile-content #log-feed');
+                if (log) {
+                    const entry = document.createElement('div');
+                    entry.className = 'flex gap-2 opacity-0 animate-[fadeIn_0.3s_ease-out_forwards]';
+                    const color = p.new.emisor === 'MAESTRA' ? 'text-blue-400' : (p.new.emisor === 'Zapia-Alpha' ? 'text-green-400' : 'text-yellow-500');
+                    entry.innerHTML = `<span class="${color}">[${p.new.emisor}]</span> <span class="text-gray-300">${p.new.mensaje}</span>`;
+                    log.appendChild(entry);
+                    log.scrollTop = log.scrollHeight;
                 }
             }).subscribe();
         }
 
-        async 
+        async function nexusExecuteCommand() {
+            const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
+            if (!input || !input.value.trim()) return;
+            const msg = input.value.trim();
+            const { error } = await nexus_sb.from('nexus_bus').insert([{ 
+                emisor: 'MAESTRA', receptor: 'Zapia-Alpha', mensaje: msg, status: 'pending' 
+            }]);
+            if (!error) input.value = '';
         }
 
-// =============================================
+        // =============================================
         // 🗄️ BASE DE DATOS SIMULADA - METADATA COMPLETA DE CADA AGENTE
         // =============================================
         // Esto simula lo que vendría de una API/DB real.
@@ -1628,7 +1647,7 @@
         // =============================================
         // 🎭 ORQUESTADOR
         // =============================================
-        
+        function executeOrchestratorCommand() { nexusExecuteCommand(); }
 
         // =============================================
         // 🔄 SIMULACIÓN DE ACTUALIZACIÓN EN VIVO
@@ -1682,7 +1701,7 @@
                     document.getElementById('mobile-notif-dropdown')?.classList.add('hidden');
                 }
                 if (e.ctrlKey) {
-                    if (e.key === '1') { e.preventDefault(); showSection('dashboard'); }
+                    if (e.key === '1') { e.preventDefault(); showSection('dashboard'); setupNexusBus(); }
                     if (e.key === '2') { e.preventDefault(); showSection('orchestrator'); }
                     if (e.key === '3') { e.preventDefault(); showSection('agents'); }
                     if (e.key === '4') { e.preventDefault(); showSection('chat'); }
@@ -1695,7 +1714,7 @@
         // 🚀 INICIALIZACIÓN
         // =============================================
         function init() {
-            showSection('dashboard');
+            showSection('dashboard'); setupNexusBus();
             simulateLiveUpdates();
             setupKeyboardShortcuts();
             simulateNewMessages();
@@ -1715,7 +1734,7 @@
             document.getElementById('drawer-agent-name')?.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
             });
-            initNexusConnection(); console.log('🚀 Zapia Nexus v3.1.2 inicializado');
+            console.log('🚀 Zapia Nexus v3.1.2 inicializado');
             console.log('🔐 30 agentes con metadata completa');
             console.log('🔗 Servicios: Google, Facebook, WhatsApp, Telegram, IA, BD, CRM, etc.');
             console.log('💡 Ctrl+1-4: Navegar | Ctrl+K: Chat | Esc: Cerrar paneles');
