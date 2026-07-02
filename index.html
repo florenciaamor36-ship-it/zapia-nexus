@@ -143,6 +143,49 @@
             border-bottom-color: #60a5fa;
         }
     </style>
+
+<style>
+    /* RESET TOTAL PARA MÓVILES */
+    @media (max-width: 1024px) {
+        /* Ocultar el contenedor de escritorio (que suele ser el primer div flex h-screen) */
+        body > div.flex.h-screen:not(.md\:hidden) {
+            display: none !important;
+        }
+
+        /* Forzar visibilidad del contenedor MÓVIL */
+        .md\:hidden.flex.flex-col {
+            display: flex !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            height: 100vh !important;
+            width: 100vw !important;
+            z-index: 999 !important;
+            background: #0a0a0a !important;
+        }
+
+        /* Forzar visibilidad de la barra de navegación móvil */
+        #mobile-nav {
+            display: flex !important;
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            height: 75px !important;
+            background: #161616 !important;
+            border-top: 2px solid #333 !important;
+            z-index: 1000 !important;
+            padding-bottom: env(safe-area-inset-bottom) !important;
+        }
+        
+        #mobile-content {
+            padding-bottom: 90px !important;
+        }
+    }
+</style>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
@@ -282,7 +325,7 @@
                         </div>
                         <div class="p-4 bg-zinc-900/50 border-t border-base flex gap-3">
                             <input type="text" id="orchestrator-input" placeholder="Inyectar orden global... (usá /comandos)" class="flex-1 bg-black/50 border border-base rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500 transition" onkeydown="if(event.key==='Enter')executeOrchestratorCommand()" aria-label="Comando del orquestador">
-                            <button onclick="window.executeOrchestratorCommand()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg text-sm font-bold transition" aria-label="Ejecutar comando">EJECUTAR</button>
+                            <button onclick="executeOrchestratorCommand()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg text-sm font-bold transition" aria-label="Ejecutar comando">EJECUTAR</button>
                         </div>
                         <div class="px-4 py-2 bg-zinc-900/20 border-t border-base flex gap-3 flex-wrap">
                             <span class="text-[9px] text-gray-600">/reiniciar</span>
@@ -389,7 +432,7 @@
                         <!-- Input del chat -->
                         <div class="p-4 border-t border-base bg-zinc-900/50 flex gap-2" id="chat-input-container">
                             <input type="text" id="chat-input" placeholder="Escribí un mensaje o usá /comando..." class="flex-1 bg-black/50 border border-base rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500 transition" onkeydown="if(event.key==='Enter')sendChatMessage()" aria-label="Mensaje de chat">
-                            <button onclick="window.sendChatMessage()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition" aria-label="Enviar mensaje">
+                            <button onclick="sendChatMessage()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition" aria-label="Enviar mensaje">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
@@ -1274,7 +1317,13 @@
             }
         }
 
-        `);
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input') || document.querySelector('#mobile-content #chat-input');
+            if (!input || !input.value.trim()) return;
+            const text = input.value.trim();
+            const tab = STATE.currentChatTab;
+            if (tab === 'monitor') return;
+            const messagesContainer = document.getElementById(`chat-tab-${tab}`);
             if (!messagesContainer) return;
             const userMsg = document.createElement('div');
             userMsg.className = 'flex gap-2 justify-end chat-msg';
@@ -1560,7 +1609,16 @@
         // =============================================
         // 🎭 ORQUESTADOR
         // =============================================
-        ] ${command}</span>`;
+        function executeOrchestratorCommand() {
+            const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
+            if (!input || !input.value.trim()) return;
+            const command = input.value.trim();
+            const logFeed = document.getElementById('log-feed') || document.querySelector('#mobile-content #log-feed');
+            const syncStatus = document.getElementById('sync-status');
+            if (logFeed) {
+                const entry = document.createElement('div');
+                entry.className = 'flex gap-2';
+                entry.innerHTML = `<span class="text-yellow-500">[SYS]</span> <span class="text-gray-400">[${new Date().toLocaleTimeString()}] ${command}</span>`;
                 logFeed.appendChild(entry);
                 logFeed.scrollTop = logFeed.scrollHeight;
             }
@@ -1686,32 +1744,18 @@
     </script>
 
 <script>
-// MOTOR NEXUS INFALIBLE V42
-window.onload = function() {
+    // Conexión Supabase
     const SB_URL = 'https://ypzudkxowpxvdggvongz.supabase.co';
-    const SB_PUB = 'sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b';
-    // Key obfuscated
     const SB_SEC = atob('c2Jfc2VjcmV0X1pJNThaVlZwbklGZERnX3lSemlOZ19hYlQ3VTFwZg==');
-    
-    const sbAdmin = supabase.createClient(SB_URL, SB_SEC);
-    const sbPub = supabase.createClient(SB_URL, SB_PUB);
+    const sb = supabase.createClient(SB_URL, SB_SEC);
 
-    // FUNCIÓN GLOBAL PARA EL BOTÓN EJECUTAR
+    // Función de Ejecución Unificada
     window.executeOrchestratorCommand = async function() {
-        console.log("Nexus: Intentando ejecutar comando...");
-        // Selector agresivo: busca en todo el documento
-        const inputs = document.querySelectorAll('#orchestrator-input');
-        let input = null;
-        inputs.forEach(i => { if(i.offsetParent !== null) input = i; }); // Solo el que es visible
-        if(!input) input = document.getElementById('orchestrator-input');
-        
-        if (!input || !input.value.trim()) {
-            console.log("Nexus: Input vacío o no encontrado");
-            return;
-        }
+        const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
+        if (!input || !input.value.trim()) return;
         
         const msg = input.value.trim();
-        const { error } = await sbAdmin.from('nexus_bus').insert([{ 
+        const { error } = await sb.from('nexus_bus').insert([{ 
             emisor: 'MAESTRA', 
             receptor: 'Zapia-Alpha', 
             mensaje: msg, 
@@ -1720,32 +1764,18 @@ window.onload = function() {
         
         if (!error) {
             input.value = '';
-            alert("✅ Orden enviada a Azure");
+            alert("🚀 Comando enviado con éxito");
         } else {
-            alert("❌ Error de red: " + error.message);
+            alert("❌ Error: " + error.message);
         }
     };
 
-    // FUNCIÓN GLOBAL PARA EL BOTÓN CHAT
-    window.sendChatMessage = async function() {
-        const inputs = document.querySelectorAll('#chat-input');
-        let input = null;
-        inputs.forEach(i => { if(i.offsetParent !== null) input = i; });
-        if(!input) input = document.getElementById('chat-input');
-        
-        if (!input || !input.value.trim()) return;
-        
-        const msg = input.value.trim();
-        const { error } = await sbAdmin.from('nexus_bus').insert([{ 
-            emisor: 'MAESTRA', 
-            receptor: 'Zapia-Alpha', 
-            mensaje: msg, 
-            status: 'chat' 
-        }]);
-        
-        if (!error) { input.value = ''; }
-    };
-};
+    // Asegurar que los botones funcionen al clickar
+    document.addEventListener('click', function(e) {
+        if (e.target.innerText === 'EJECUTAR' || e.target.closest('button')?.innerText === 'EJECUTAR') {
+            window.executeOrchestratorCommand();
+        }
+    });
 </script>
 
 </body>
