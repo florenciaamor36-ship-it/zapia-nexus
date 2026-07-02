@@ -144,6 +144,52 @@
         }
     </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style id="zapia-mobile-fix">
+    /* Reset radical para móviles */
+    @media (max-width: 768px) {
+        /* Ocultar versión escritorio */
+        div.flex.h-screen.bg-black.text-white.overflow-hidden.hidden.md\:flex {
+            display: none !important;
+        }
+        
+        /* Forzar versión móvil */
+        div.md\:hidden.flex.flex-col.h-full.overflow-hidden {
+            display: flex !important;
+            position: fixed !important;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #000 !important;
+            z-index: 9999 !important;
+        }
+
+        /* La barra de navegación (id="mobile-nav") */
+        #mobile-nav, .mobile-nav {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            height: 70px !important;
+            background: #1a1a1a !important;
+            border-top: 2px solid #333 !important;
+            z-index: 10000 !important;
+            flex-direction: row !important;
+            justify-content: space-around !important;
+            align-items: center !important;
+            padding-bottom: env(safe-area-inset-bottom) !important;
+        }
+        
+        /* Asegurar que el contenido tenga padding para no ser tapado */
+        #mobile-content {
+            padding-bottom: 90px !important;
+            flex: 1 !important;
+            overflow-y: auto !important;
+        }
+    }
+</style>
+
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
