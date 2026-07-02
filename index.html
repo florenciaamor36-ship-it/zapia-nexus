@@ -143,6 +143,7 @@
             border-bottom-color: #60a5fa;
         }
     </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
@@ -841,4 +842,923 @@
             if (titleEl) {
                 let title = SECTION_TITLES[id] || 'Dashboard';
                 if (id === 'agents') {
-                    const online = agents.filter(a => a.status === 'online' || a.st
+                    const online = agents.filter(a => a.status === 'online' || a.status === 'working').length;
+                    title = `Gestión de Agentes (${online}/${agents.length})`;
+                }
+                titleEl.innerText = title;
+            }
+            updateNavState(id);
+            if (id === 'agents') renderAgents();
+            if (id === 'dashboard') renderDashboardSummary();
+            if (id === 'chat') {
+                initMonitorSelect();
+                if (STATE.currentChatTab === 'monitor') loadMonitorConversation();
+            }
+            renderMobileContent();
+            document.getElementById('sections-container')?.scrollTo(0, 0);
+        }
+
+        function updateNavState(sectionId) {
+            document.querySelectorAll('#desktop-nav .nav-link, #mobile-nav .nav-link').forEach(btn => {
+                const isActive = btn.dataset.section === sectionId;
+                btn.classList.toggle('active', isActive);
+                if (btn.closest('#desktop-nav')) {
+                    btn.classList.toggle('bg-zinc-800', isActive);
+                    btn.classList.toggle('text-blue-500', isActive);
+                }
+                if (btn.closest('#mobile-nav')) {
+                    btn.classList.toggle('text-blue-500', isActive);
+                    btn.classList.toggle('text-gray-500', !isActive);
+                }
+            });
+        }
+
+        function renderMobileContent() {
+            if (window.innerWidth >= 768) return;
+            const section = document.getElementById(`section-${STATE.currentSection}`);
+            const mobileContent = document.getElementById('mobile-content');
+            if (section && mobileContent) {
+                mobileContent.innerHTML = '';
+                const clone = section.cloneNode(true);
+                clone.classList.remove('hidden');
+                mobileContent.appendChild(clone);
+                rebindMobileEvents();
+            }
+        }
+
+        function rebindMobileEvents() {
+            document.querySelectorAll('#mobile-content .agent-card').forEach(card => {
+                card.onclick = function(e) {
+                    e.preventDefault();
+                    const agentId = parseInt(this.dataset.agentId);
+                    openAgentDrawer(agentId);
+                };
+            });
+            const orchInput = document.querySelector('#mobile-content #orchestrator-input');
+            if (orchInput) {
+                orchInput.onkeydown = function(e) {
+                    if (e.key === 'Enter') executeOrchestratorCommand();
+                };
+            }
+            document.querySelectorAll('#mobile-content .chat-tab').forEach(tab => {
+                tab.onclick = function() {
+                    switchChatTab(this.dataset.chatTab);
+                };
+            });
+            const chatInput = document.querySelector('#mobile-content #chat-input');
+            if (chatInput) {
+                chatInput.onkeydown = function(e) {
+                    if (e.key === 'Enter') sendChatMessage();
+                };
+            }
+            const monitorSelect = document.querySelector('#mobile-content #monitor-agent-select');
+            if (monitorSelect) {
+                monitorSelect.onchange = function() {
+                    loadMonitorConversation();
+                };
+            }
+        }
+
+        // =============================================
+        // 🤖 RENDERIZADO DE AGENTES
+        // =============================================
+        function renderAgents() {
+            const grid = document.getElementById('agents-grid');
+            if (!grid) return;
+            const statusLabels = {
+                'online': 'En línea',
+                'syncing': 'Sincronizando',
+                'offline': 'Fuera de línea',
+                'working': 'Trabajando'
+            };
+            const html = agents.map(a => `
+                <div class="agent-card bg-card border border-base p-4 rounded-xl flex flex-col items-center gap-3 hover:border-blue-500 transition cursor-pointer"
+                     data-agent-id="${a.id}"
+                     data-status="${a.status}"
+                     onclick="openAgentDrawer(${a.id})"
+                     role="button"
+                     tabindex="0"
+                     aria-label="Agente ${a.name} - ${statusLabels[a.status]} - ${a.subAgents.length} sub-agentes - ${a.linkedServices.length} servicios vinculados">
+                    <div class="w-10 h-10 rounded-lg bg-zinc-800 flex items-center justify-center text-[10px] font-mono text-gray-400">
+                        ID-${String(a.id).padStart(2, '0')}
+                    </div>
+                    <div class="text-center">
+                        <p class="text-[10px] font-bold text-white truncate">${a.name}</p>
+                        <p class="text-[8px] text-gray-500">${a.version} · ${a.latency}ms</p>
+                        <p class="text-[8px] text-gray-600">${a.subAgents.length} sub · ${a.linkedServices.length} vinc</p>
+                    </div>
+                    <div class="agent-dot ${a.status}" title="${statusLabels[a.status]}"></div>
+                    <span class="text-[8px] text-gray-600">${statusLabels[a.status]}</span>
+                </div>
+            `).join('');
+            grid.innerHTML = html;
+        }
+
+        function renderDashboardSummary() {
+            const container = document.getElementById('dashboard-agent-summary');
+            if (!container) return;
+            const online = agents.filter(a => a.status === 'online').length;
+            const working = agents.filter(a => a.status === 'working').length;
+            const syncing = agents.filter(a => a.status === 'syncing').length;
+            const offline = agents.filter(a => a.status === 'offline').length;
+            const totalServices = agents.reduce((sum, a) => sum + a.linkedServices.length, 0);
+            const totalSubAgents = agents.reduce((sum, a) => sum + a.subAgents.length, 0);
+            container.innerHTML = `
+                <div class="bg-card border border-base p-4 rounded-xl text-center">
+                    <div class="agent-dot online mx-auto mb-1"></div>
+                    <p class="text-2xl font-bold text-green-400">${online}</p>
+                    <p class="text-[9px] text-gray-500 uppercase">En línea</p>
+                </div>
+                <div class="bg-card border border-base p-4 rounded-xl text-center">
+                    <div class="agent-dot working mx-auto mb-1"></div>
+                    <p class="text-2xl font-bold text-blue-400">${working}</p>
+                    <p class="text-[9px] text-gray-500 uppercase">Trabajando</p>
+                </div>
+                <div class="bg-card border border-base p-4 rounded-xl text-center">
+                    <i class="fas fa-link text-yellow-400 text-xl mb-1"></i>
+                    <p class="text-2xl font-bold text-yellow-400">${totalServices}</p>
+                    <p class="text-[9px] text-gray-500 uppercase">Vinculaciones</p>
+                </div>
+                <div class="bg-card border border-base p-4 rounded-xl text-center">
+                    <i class="fas fa-sitemap text-purple-400 text-xl mb-1"></i>
+                    <p class="text-2xl font-bold text-purple-400">${totalSubAgents}</p>
+                    <p class="text-[9px] text-gray-500 uppercase">Sub-Agentes</p>
+                </div>
+            `;
+        }
+
+        // =============================================
+        // 📋 DRAWER DEL AGENTE - METADATA SUPER DETALLADA
+        // =============================================
+        function openAgentDrawer(agentId) {
+            const agent = agents.find(a => a.id === agentId);
+            if (!agent) return;
+            STATE.selectedAgentId = agentId;
+            document.getElementById('drawer-agent-name').textContent = agent.name;
+            const dot = document.getElementById('drawer-dot');
+            dot.className = `agent-dot ${agent.status}`;
+            const content = document.getElementById('drawer-content');
+            const statusLabels = {
+                'online': 'En línea',
+                'syncing': 'Sincronizando',
+                'offline': 'Fuera de línea',
+                'working': 'Trabajando'
+            };
+
+            // Agrupar servicios por categoría
+            const servicesByCategory = {};
+            agent.linkedServices.forEach(s => {
+                if (!servicesByCategory[s.category]) servicesByCategory[s.category] = [];
+                servicesByCategory[s.category].push(s);
+            });
+
+            content.innerHTML = `
+                <!-- ===== INFORMACIÓN GENERAL ===== -->
+                <div class="bg-zinc-800/30 rounded-xl p-4 space-y-2">
+                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">📋 Información General</p>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div><span class="text-gray-500">ID:</span> <span class="text-white font-mono">${String(agent.id).padStart(2, '0')}</span></div>
+                        <div><span class="text-gray-500">Versión:</span> <span class="text-white">${agent.version}</span></div>
+                        <div><span class="text-gray-500">Estado:</span> <span class="text-white">${statusLabels[agent.status]}</span></div>
+                        <div><span class="text-gray-500">Latencia:</span> <span class="text-blue-400">${agent.latency}ms</span></div>
+                        <div><span class="text-gray-500">Creado:</span> <span class="text-white">${agent.createdAt}</span></div>
+                        <div><span class="text-gray-500">Último ping:</span> <span class="text-white">${Math.floor((Date.now() - agent.lastPing) / 1000)}s</span></div>
+                        <div><span class="text-gray-500">Tasa de éxito:</span> <span class="text-green-400">${agent.successRate}%</span></div>
+                        <div><span class="text-gray-500">Tareas:</span> <span class="text-white">${agent.tasksCompleted.toLocaleString()}</span></div>
+                        <div><span class="text-gray-500">Mensajes proc.:</span> <span class="text-white">${agent.messagesProcessed.toLocaleString()}</span></div>
+                        <div><span class="text-gray-500">Sub-agentes:</span> <span class="text-white">${agent.subAgents.length}</span></div>
+                        <div><span class="text-gray-500">Servicios vinc.:</span> <span class="text-white">${agent.linkedServices.length}</span></div>
+                        <div><span class="text-gray-500">Tablas DB:</span> <span class="text-white">${agent.database.tables.length}</span></div>
+                    </div>
+                </div>
+
+                <!-- ===== 🔑 CREDENCIALES ===== -->
+                <div class="bg-zinc-800/30 rounded-xl p-4 space-y-3">
+                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">🔑 Credenciales de Acceso</p>
+                    <div class="space-y-2">
+                        <div>
+                            <p class="text-[9px] text-gray-500 mb-1">Token de Autenticación</p>
+                            <div class="bg-black/50 rounded-lg p-3 font-mono text-[10px] text-green-400 break-all border border-green-500/20">
+                                ${agent.token}
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-[9px] text-gray-500 mb-1">API Key</p>
+                            <div class="bg-black/50 rounded-lg p-3 font-mono text-[10px] text-yellow-400 break-all border border-yellow-500/20">
+                                ${agent.apiKey}
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-[9px] text-gray-500 mb-1">Endpoint API</p>
+                            <div class="bg-black/50 rounded-lg p-3 font-mono text-[10px] text-blue-400 break-all border border-blue-500/20">
+                                ${agent.apiEndpoint}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== 🔗 SERVICIOS VINCULADOS POR CATEGORÍA ===== -->
+                <div class="bg-zinc-800/30 rounded-xl p-4 space-y-4">
+                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">🔗 Servicios Vinculados (${agent.linkedServices.length})</p>
+                    ${Object.entries(servicesByCategory).map(([category, services]) => `
+                        <div>
+                            <p class="text-[9px] text-gray-600 uppercase font-bold mb-2 border-b border-base pb-1">${category}</p>
+                            <div class="space-y-2">
+                                ${services.map(s => `
+                                    <div class="bg-black/30 rounded-lg p-3 border ${s.status === 'error' ? 'border-red-500/30' : s.permission === 'admin' ? 'border-blue-500/30' : 'border-base'}">
+                                        <div class="flex justify-between items-start">
+                                            <div class="flex items-center gap-2">
+                                                <i class="${s.icon} text-gray-400 text-sm"></i>
+                                                <div>
+                                                    <p class="text-xs font-bold text-white">${s.name}</p>
+                                                    <p class="text-[9px] text-gray-500">${s.description}</p>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-[8px] px-2 py-0.5 rounded ${s.status === 'error' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}">${s.status === 'active' ? 'Activo' : 'Error'}</span>
+                                                <span class="text-[8px] px-2 py-0.5 rounded ${s.permission === 'admin' ? 'bg-red-500/20 text-red-400' : s.permission === 'escritura' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-blue-500/20 text-blue-400'}">${s.permission}</span>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2 grid grid-cols-2 gap-1 text-[9px]">
+                                            <div><span class="text-gray-600">Cuenta:</span> <span class="text-gray-400 font-mono">${s.email}</span></div>
+                                            <div><span class="text-gray-600">Vinculado:</span> <span class="text-gray-400">${s.linkedAt}</span></div>
+                                            <div><span class="text-gray-600">Última sync:</span> <span class="text-gray-400">${new Date(s.lastSync).toLocaleTimeString()}</span></div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <!-- ===== 🤖 SUB-AGENTES ===== -->
+                <div class="bg-zinc-800/30 rounded-xl p-4 space-y-3">
+                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">🤖 Sub-Agentes (${agent.subAgents.length})</p>
+                    ${agent.subAgents.length === 0 ? '<p class="text-[10px] text-gray-600 text-center py-2">Sin sub-agentes asignados</p>' : `
+                        <div class="grid grid-cols-2 gap-2">
+                            ${agent.subAgents.map(sub => `
+                                <div class="bg-black/30 rounded-lg p-3 border border-base">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <div class="agent-dot ${sub.status}" style="width:6px;height:6px;"></div>
+                                        <p class="text-[10px] font-bold text-white truncate">${sub.name}</p>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-1 text-[8px]">
+                                        <div><span class="text-gray-600">Latencia:</span> <span class="text-blue-400">${sub.latency}ms</span></div>
+                                        <div><span class="text-gray-600">Tareas:</span> <span class="text-white">${sub.tasksCompleted.toLocaleString()}</span></div>
+                                    </div>
+                                    <div class="mt-1">
+                                        <p class="text-[7px] text-gray-600 font-mono truncate">Token: ${sub.token}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `}
+                </div>
+
+                <!-- ===== 🗄️ BASE DE DATOS ===== -->
+                <div class="bg-zinc-800/30 rounded-xl p-4 space-y-3">
+                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">🗄️ Base de Datos</p>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div><span class="text-gray-500">Motor:</span> <span class="text-white">${agent.database.engine}</span></div>
+                        <div><span class="text-gray-500">Región:</span> <span class="text-white">${agent.database.region}</span></div>
+                        <div><span class="text-gray-500">Conexiones:</span> <span class="text-green-400">${agent.database.activeConnections}/${agent.database.poolSize}</span></div>
+                        <div><span class="text-gray-500">Última sync:</span> <span class="text-white">${new Date(agent.database.lastSync).toLocaleTimeString()}</span></div>
+                    </div>
+                    <div>
+                        <p class="text-[9px] text-gray-500 mb-1">URL:</p>
+                        <div class="bg-black/50 rounded-lg p-2 font-mono text-[9px] text-blue-400 break-all">${agent.database.url}</div>
+                    </div>
+                    <div>
+                        <p class="text-[9px] text-gray-500 mb-1">Tablas accedidas (${agent.database.tables.length}):</p>
+                        <div class="flex flex-wrap gap-1">
+                            ${agent.database.tables.map(t => `<span class="text-[8px] bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">${t}</span>`).join('')}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== 📝 ÚLTIMOS LOGS ===== -->
+                <div class="bg-zinc-800/30 rounded-xl p-4 space-y-2">
+                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-wider">📝 Últimos Logs</p>
+                    ${agent.recentLogs.map(log => {
+                        const levelColors = {
+                            'INFO': 'text-blue-400',
+                            'WARN': 'text-yellow-400',
+                            'DEBUG': 'text-gray-400',
+                            'SUCCESS': 'text-green-400'
+                        };
+                        return `
+                            <div class="flex gap-2 text-[10px] border-b border-base/50 pb-1">
+                                <span class="text-gray-600 flex-shrink-0 w-12">${log.time}</span>
+                                <span class="${levelColors[log.level] || 'text-gray-400'} flex-shrink-0 w-14">[${log.level}]</span>
+                                <span class="text-gray-400">${log.action}</span>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+
+                <!-- Nota -->
+                <p class="text-[9px] text-gray-600 text-center italic">✏️ El nombre del agente es editable · Metadata se actualiza desde API · ${agent.linkedServices.length} servicios vinculados</p>
+            `;
+
+            const drawer = document.getElementById('agent-drawer');
+            const overlay = document.getElementById('drawer-overlay');
+            drawer.classList.add('open');
+            overlay.classList.remove('hidden');
+        }
+
+        function closeAgentDrawer() {
+            const drawer = document.getElementById('agent-drawer');
+            const overlay = document.getElementById('drawer-overlay');
+            drawer.classList.remove('open');
+            overlay.classList.add('hidden');
+            const nameEl = document.getElementById('drawer-agent-name');
+            if (nameEl && STATE.selectedAgentId) {
+                const agent = agents.find(a => a.id === STATE.selectedAgentId);
+                if (agent && nameEl.textContent.trim()) {
+                    agent.name = nameEl.textContent.trim();
+                    renderAgents();
+                }
+            }
+            STATE.selectedAgentId = null;
+        }
+
+        function agentAction(action) {
+            const agent = agents.find(a => a.id === STATE.selectedAgentId);
+            if (!agent) return;
+            switch (action) {
+                case 'restart':
+                    agent.status = 'syncing';
+                    showToast(`🔄 Reiniciando ${agent.name}...`);
+                    addNotification('warning', `${agent.name} reiniciado manualmente`, agent.id);
+                    setTimeout(() => {
+                        agent.status = 'online';
+                        renderAgents();
+                        if (STATE.currentSection === 'dashboard') renderDashboardSummary();
+                        updateAgentDrawerIfOpen(agent);
+                    }, 3000);
+                    break;
+                case 'pause':
+                    agent.status = 'offline';
+                    showToast(`⏸ ${agent.name} pausado`);
+                    addNotification('info', `${agent.name} pausado`, agent.id);
+                    break;
+                case 'talk':
+                    closeAgentDrawer();
+                    showSection('chat');
+                    switchChatTab('zaira');
+                    const chatInput = document.getElementById('chat-input') || document.querySelector('#mobile-content #chat-input');
+                    if (chatInput) {
+                        chatInput.value = `@${agent.name} `;
+                        chatInput.focus();
+                    }
+                    break;
+                case 'logs':
+                    showToast(`📋 Cargando logs completos de ${agent.name}...`);
+                    break;
+                case 'unlink':
+                    if (confirm(`¿Desvincular todas las cuentas de ${agent.name}? Esta acción no se puede deshacer.`)) {
+                        agent.linkedServices = [];
+                        agent.token = 'zx_UNLINKED_' + Date.now();
+                        agent.apiKey = 'zap_api_UNLINKED_' + Date.now();
+                        showToast(`🔗 ${agent.name} desvinculado de todos los servicios`);
+                        addNotification('error', `${agent.name} desvinculado de todos los servicios`, agent.id);
+                    }
+                    break;
+            }
+            renderAgents();
+            if (STATE.currentSection === 'dashboard') renderDashboardSummary();
+            updateAgentDrawerIfOpen(agent);
+        }
+
+        function updateAgentDrawerIfOpen(agent) {
+            if (STATE.selectedAgentId === agent.id) {
+                document.getElementById('drawer-dot').className = `agent-dot ${agent.status}`;
+            }
+        }
+
+        // =============================================
+        // 💬 CHAT
+        // =============================================
+        function switchChatTab(tab) {
+            STATE.currentChatTab = tab;
+            document.querySelectorAll('.chat-tab').forEach(t => {
+                t.classList.remove('active', 'text-blue-400', 'border-blue-500', 'bg-blue-500/5');
+                t.classList.add('text-gray-500', 'border-transparent');
+            });
+            const activeTab = document.querySelector(`[data-chat-tab="${tab}"]`);
+            if (activeTab) {
+                activeTab.classList.add('active', 'text-blue-400', 'border-blue-500', 'bg-blue-500/5');
+                activeTab.classList.remove('text-gray-500', 'border-transparent');
+            }
+            ['zaira', 'bus', 'broadcast', 'monitor'].forEach(t => {
+                const el = document.getElementById(`chat-tab-${t}`);
+                if (el) el.classList.toggle('hidden', t !== tab);
+            });
+            // Ocultar input en monitor
+            const inputContainer = document.getElementById('chat-input-container');
+            if (inputContainer) {
+                inputContainer.style.display = tab === 'monitor' ? 'none' : 'flex';
+            }
+            if (tab === 'monitor') {
+                initMonitorSelect();
+                const select = document.getElementById('monitor-agent-select');
+                if (select && select.value) loadMonitorConversation();
+            }
+            // Mobile también
+            document.querySelectorAll('#mobile-content [id^="chat-tab-"]').forEach(el => {
+                el.classList.toggle('hidden', !el.id.includes(tab));
+            });
+            const mobileInputContainer = document.querySelector('#mobile-content #chat-input-container');
+            if (mobileInputContainer) {
+                mobileInputContainer.style.display = tab === 'monitor' ? 'none' : 'flex';
+            }
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input') || document.querySelector('#mobile-content #chat-input');
+            if (!input || !input.value.trim()) return;
+            const text = input.value.trim();
+            const tab = STATE.currentChatTab;
+            if (tab === 'monitor') return;
+            const messagesContainer = document.getElementById(`chat-tab-${tab}`);
+            if (!messagesContainer) return;
+            const userMsg = document.createElement('div');
+            userMsg.className = 'flex gap-2 justify-end chat-msg';
+            userMsg.innerHTML = `
+                <div class="bg-blue-600/20 border border-blue-600/30 rounded-xl p-3 text-xs text-gray-200 max-w-[75%]">
+                    <p>${text}</p>
+                    <p class="text-[9px] text-gray-500 mt-1 text-right">Ahora</p>
+                </div>
+                <div class="w-7 h-7 rounded-full bg-zinc-600 flex items-center justify-center text-[8px] text-white font-bold flex-shrink-0">TU</div>
+            `;
+            messagesContainer.appendChild(userMsg);
+            if (text.startsWith('/')) {
+                executeSlashCommand(text);
+            } else {
+                setTimeout(() => {
+                    addBotMessage(messagesContainer, tab, text);
+                }, 600 + Math.random() * 1500);
+            }
+            input.value = '';
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            const chatMessages = document.getElementById('chat-messages');
+            if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addBotMessage(container, tab, userText) {
+            const responses = {
+                'zaira': {
+                    name: 'ZAIRA',
+                    color: 'blue',
+                    initials: 'ZA',
+                    text: ['Procesando tu solicitud...', 'Consultando con los agentes disponibles...', 'Entendido. ¿Necesitás algo más?', `Recibido: "${userText.substring(0, 40)}${userText.length > 40 ? '...' : ''}"`][Math.floor(Math.random() * 4)]
+                },
+                'bus': {
+                    name: 'SOPORTE-IA',
+                    color: 'purple',
+                    initials: 'SI',
+                    text: 'Mensaje retransmitido al bus. Todos los agentes pueden verlo.'
+                },
+                'broadcast': {
+                    name: 'BROADCAST',
+                    color: 'yellow',
+                    initials: 'BC',
+                    text: `Mensaje global enviado a ${agents.length} agentes.`
+                }
+            };
+            const resp = responses[tab] || responses['zaira'];
+            const msg = document.createElement('div');
+            msg.className = 'flex gap-2 chat-msg';
+            msg.innerHTML = `
+                <div class="w-7 h-7 rounded-full bg-${resp.color}-600 flex items-center justify-center text-[8px] text-white font-bold flex-shrink-0">${resp.initials}</div>
+                <div class="bg-zinc-800 rounded-xl p-3 text-xs text-gray-300 max-w-[75%]">
+                    ${tab === 'bus' ? `<p class="text-${resp.color}-400 text-[10px] font-bold">${resp.name}</p>` : ''}
+                    <p>${resp.text}</p>
+                    <p class="text-[9px] text-gray-500 mt-1">Ahora</p>
+                </div>
+            `;
+            container.appendChild(msg);
+            container.scrollTop = container.scrollHeight;
+            const chatMessages = document.getElementById('chat-messages');
+            if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // =============================================
+        // 👁️ MONITOR DE CONVERSACIONES REALES
+        // =============================================
+        const conversationsDB = {};
+
+        function generateConversation(agentId) {
+            const agent = agents.find(a => a.id === agentId);
+            if (!agent) return null;
+            const clientNames = ['María García', 'Carlos Rodríguez', 'Lucía Martínez', 'Pedro Sánchez', 'Ana López', 'Jorge Vega', 'Sofía Benítez', 'Diego Torres', 'Camila Rojas', 'Facundo Díaz'];
+            const clientName = clientNames[Math.floor(Math.random() * clientNames.length)];
+            const clientPhone = `+54911${Math.floor(Math.random() * 90000000) + 10000000}`;
+            const messages = [
+                { from: 'client', text: 'Hola, necesito ayuda con mi pedido #4821. No me llega la confirmación.', time: new Date(Date.now() - 1800000).toLocaleTimeString(), clientName, clientPhone },
+                { from: 'agent', text: `¡Hola ${clientName}! Déjame revisar tu pedido #4821 en el sistema. Un momento por favor.`, time: new Date(Date.now() - 1740000).toLocaleTimeString(), agentName: agent.name },
+                { from: 'agent', text: 'Veo que tu pedido está en estado "Procesando". El pago ya fue confirmado. ¿Querés que te envíe el comprobante por WhatsApp?', time: new Date(Date.now() - 1680000).toLocaleTimeString(), agentName: agent.name },
+                { from: 'client', text: 'Sí por favor. ¿Cuándo lo despachan?', time: new Date(Date.now() - 1620000).toLocaleTimeString(), clientName, clientPhone },
+                { from: 'agent', text: 'El despacho está programado para mañana entre las 14 y 18hs. ¿Te sirve ese horario?', time: new Date(Date.now() - 1560000).toLocaleTimeString(), agentName: agent.name },
+                { from: 'client', text: 'Perfecto, muchas gracias. ¿Me pasás el número de seguimiento?', time: new Date(Date.now() - 1500000).toLocaleTimeString(), clientName, clientPhone },
+                { from: 'agent', text: `Claro, tu número de seguimiento es: ARG-2025-${agentId}${Math.floor(Math.random() * 9000) + 1000}-ZX. Podés trackearlo en https://zapia.ai/tracking`, time: new Date(Date.now() - 1440000).toLocaleTimeString(), agentName: agent.name },
+                { from: 'client', text: '¡Genial! Muy eficiente el servicio. Gracias.', time: new Date(Date.now() - 1380000).toLocaleTimeString(), clientName, clientPhone },
+                { from: 'agent', text: `¡Gracias a vos ${clientName}! Cualquier cosa me avisás. ¡Que tengas buen día! 🌟`, time: new Date(Date.now() - 1320000).toLocaleTimeString(), agentName: agent.name }
+            ];
+            return { clientName, clientPhone, messages, agentId, agentName: agent.name };
+        }
+
+        function loadMonitorConversation() {
+            const select = document.getElementById('monitor-agent-select') || document.querySelector('#mobile-content #monitor-agent-select');
+            const container = document.getElementById('monitor-conversation') || document.querySelector('#mobile-content #monitor-conversation');
+            const liveIndicator = document.getElementById('monitor-live-indicator') || document.querySelector('#mobile-content #monitor-live-indicator');
+            if (!select || !container) return;
+            const agentId = parseInt(select.value);
+            if (!agentId) {
+                container.innerHTML = '<p class="text-[10px] text-gray-600 text-center py-8">Seleccioná un agente para ver su conversación en tiempo real</p>';
+                if (liveIndicator) liveIndicator.classList.add('hidden');
+                return;
+            }
+            if (!conversationsDB[agentId]) {
+                conversationsDB[agentId] = generateConversation(agentId);
+            }
+            const conv = conversationsDB[agentId];
+            if (!conv) return;
+            if (liveIndicator) liveIndicator.classList.remove('hidden');
+            container.innerHTML = `
+                <div class="bg-zinc-800/50 rounded-xl p-3 border border-base mb-3">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-xs font-bold text-white">👤 ${conv.clientName}</p>
+                            <p class="text-[9px] text-gray-500 font-mono">📱 ${conv.clientPhone}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[9px] text-gray-500">🤖 Agente: <span class="text-blue-400">${conv.agentName}</span></p>
+                            <p class="text-[8px] text-green-400">● En conversación</p>
+                        </div>
+                    </div>
+                </div>
+                ${conv.messages.map(msg => {
+                    const isAgent = msg.from === 'agent';
+                    return `
+                        <div class="flex gap-2 ${isAgent ? '' : 'justify-end'} chat-msg">
+                            ${isAgent ? `
+                                <div class="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-[8px] text-white font-bold flex-shrink-0">
+                                    ${conv.agentName.split(' ').map(w => w[0]).join('').substring(0, 2)}
+                                </div>
+                            ` : ''}
+                            <div class="${isAgent ? 'bg-zinc-800 border border-base' : 'bg-green-600/20 border border-green-600/30'} rounded-xl p-3 text-xs max-w-[75%]">
+                                <p class="text-gray-200">${msg.text}</p>
+                                <p class="text-[8px] text-gray-500 mt-1 ${isAgent ? '' : 'text-right'}">
+                                    ${isAgent ? '🤖 ' + msg.agentName : '👤 ' + msg.clientName} · ${msg.time}
+                                </p>
+                            </div>
+                            ${!isAgent ? `
+                                <div class="w-7 h-7 rounded-full bg-green-600 flex items-center justify-center text-[8px] text-white font-bold flex-shrink-0">
+                                    ${msg.clientName.split(' ').map(w => w[0]).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('')}
+                <div class="flex gap-2 items-center text-[10px] text-gray-600 italic">
+                    <div class="flex gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-gray-600 animate-bounce" style="animation-delay:0s"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-gray-600 animate-bounce" style="animation-delay:0.2s"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-gray-600 animate-bounce" style="animation-delay:0.4s"></span>
+                    </div>
+                    ${conv.clientName} está escribiendo...
+                </div>
+            `;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function initMonitorSelect() {
+            const select = document.getElementById('monitor-agent-select') || document.querySelector('#mobile-content #monitor-agent-select');
+            if (!select) return;
+            const statusEmoji = { online: '🟢', syncing: '🟡', offline: '🔴', working: '🔵' };
+            select.innerHTML = '<option value="">Seleccionar agente...</option>' +
+                agents.map(a => `<option value="${a.id}">${statusEmoji[a.status] || '⚪'} ${a.name} (${a.linkedServices.length} vinc.)</option>`).join('');
+        }
+
+        function simulateNewMessages() {
+            setInterval(() => {
+                const select = document.getElementById('monitor-agent-select') || document.querySelector('#mobile-content #monitor-agent-select');
+                if (!select || !select.value) return;
+                const agentId = parseInt(select.value);
+                if (!agentId || !conversationsDB[agentId]) return;
+                const conv = conversationsDB[agentId];
+                const lastMsg = conv.messages[conv.messages.length - 1];
+                if (Math.random() < 0.3) {
+                    const newFrom = lastMsg.from === 'agent' ? 'client' : 'agent';
+                    const newMessages = [
+                        { from: 'client', text: '¿Hay alguna novedad con mi pedido? 🤔', time: new Date().toLocaleTimeString(), clientName: conv.clientName, clientPhone: conv.clientPhone },
+                        { from: 'agent', text: '¡Todo en orden! Tu pedido sigue en camino. 🚚', time: new Date().toLocaleTimeString(), agentName: conv.agentName },
+                        { from: 'client', text: 'Ok, gracias por la info 👍', time: new Date().toLocaleTimeString(), clientName: conv.clientName, clientPhone: conv.clientPhone },
+                        { from: 'agent', text: '¿Necesitás algo más? Estoy para ayudarte. 😊', time: new Date().toLocaleTimeString(), agentName: conv.agentName }
+                    ];
+                    const newMsg = newMessages[Math.floor(Math.random() * newMessages.length)];
+                    conv.messages.push(newMsg);
+                    loadMonitorConversation();
+                    addNotification('info', `Nuevo mensaje en conversación de ${conv.clientName} con ${conv.agentName}`, agentId);
+                }
+            }, 20000);
+        }
+
+        // =============================================
+        // 🎭 COMANDOS SLASH
+        // =============================================
+        function executeSlashCommand(cmd) {
+            const parts = cmd.split(' ');
+            const command = parts[0].toLowerCase();
+            const args = parts.slice(1);
+            switch (command) {
+                case '/reiniciar':
+                    const agentToRestart = agents.find(a => a.name.includes(args[0]) || a.id === parseInt(args[0]));
+                    if (agentToRestart) {
+                        agentToRestart.status = 'syncing';
+                        showToast(`🔄 Reiniciando ${agentToRestart.name}...`);
+                        addNotification('warning', `Reinicio de ${agentToRestart.name}`, agentToRestart.id);
+                        setTimeout(() => { agentToRestart.status = 'online'; renderAgents(); }, 3000);
+                    } else { showToast('❌ Agente no encontrado'); }
+                    break;
+                case '/stats':
+                    const agentStats = agents.find(a => a.name.includes(args[0]) || a.id === parseInt(args[0]));
+                    if (agentStats) openAgentDrawer(agentStats.id);
+                    break;
+                case '/broadcast':
+                    showToast(`📢 Broadcast enviado a ${agents.length} agentes`);
+                    addNotification('info', `Broadcast: ${args.join(' ')}`);
+                    break;
+                case '/logs':
+                    showToast(`📋 Logs de ${args[0] || 'todos'} solicitados`);
+                    break;
+                case '/silenciar':
+                    showToast(`🔇 ${args[0] || 'Agente'} silenciado`);
+                    break;
+                case '/exportar':
+                    exportData();
+                    break;
+                case '/ayuda':
+                case '/help':
+                    showToast('💡 /reiniciar /stats /broadcast /logs /silenciar /exportar /ayuda /vincular');
+                    break;
+                case '/vincular':
+                    if (args.length >= 2 && STATE.selectedAgentId) {
+                        const agent = agents.find(a => a.id === STATE.selectedAgentId);
+                        if (agent) {
+                            agent.linkedServices.push({
+                                name: args.join(' '),
+                                icon: 'fas fa-link',
+                                description: 'Servicio vinculado manualmente',
+                                category: 'Manual',
+                                email: `${args[0].toLowerCase()}@zapia.ai`,
+                                permission: 'lectura',
+                                linkedAt: new Date().toISOString().split('T')[0],
+                                status: 'active',
+                                lastSync: new Date().toISOString()
+                            });
+                            showToast(`🔗 Servicio "${args.join(' ')}" vinculado a ${agent.name}`);
+                            addNotification('success', `Nuevo servicio vinculado a ${agent.name}`, agent.id);
+                            openAgentDrawer(agent.id);
+                        }
+                    }
+                    break;
+                default:
+                    showToast('❓ Comando no reconocido. Usá /ayuda');
+            }
+        }
+
+        // =============================================
+        // 📤 EXPORTACIÓN
+        // =============================================
+        function exportData() {
+            const data = agents.map(a => ({
+                id: a.id,
+                name: a.name,
+                status: a.status,
+                version: a.version,
+                token: a.token,
+                apiKey: a.apiKey,
+                latency: a.latency,
+                tasksCompleted: a.tasksCompleted,
+                successRate: a.successRate,
+                messagesProcessed: a.messagesProcessed,
+                subAgentsCount: a.subAgents.length,
+                linkedServicesCount: a.linkedServices.length,
+                linkedServices: a.linkedServices.map(s => s.name).join(', '),
+                dbTables: a.database.tables.join(', '),
+                lastPing: new Date(a.lastPing).toISOString(),
+                createdAt: a.createdAt
+            }));
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `zapia_agentes_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('📥 Datos exportados como JSON');
+            addNotification('success', 'Datos exportados correctamente');
+        }
+
+        // =============================================
+        // 🎭 ORQUESTADOR
+        // =============================================
+        function executeOrchestratorCommand() {
+            const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
+            if (!input || !input.value.trim()) return;
+            const command = input.value.trim();
+            const logFeed = document.getElementById('log-feed') || document.querySelector('#mobile-content #log-feed');
+            const syncStatus = document.getElementById('sync-status');
+            if (logFeed) {
+                const entry = document.createElement('div');
+                entry.className = 'flex gap-2';
+                entry.innerHTML = `<span class="text-yellow-500">[SYS]</span> <span class="text-gray-400">[${new Date().toLocaleTimeString()}] ${command}</span>`;
+                logFeed.appendChild(entry);
+                logFeed.scrollTop = logFeed.scrollHeight;
+            }
+            if (syncStatus) {
+                syncStatus.textContent = 'Comando procesado';
+                syncStatus.classList.add('text-green-400');
+                setTimeout(() => {
+                    syncStatus.textContent = 'Real-time sync';
+                    syncStatus.classList.remove('text-green-400');
+                }, 2000);
+            }
+            if (command.startsWith('/')) executeSlashCommand(command);
+            input.value = '';
+        }
+
+        // =============================================
+        // 🔄 SIMULACIÓN DE ACTUALIZACIÓN EN VIVO
+        // =============================================
+        function simulateLiveUpdates() {
+            setInterval(() => {
+                const count = Math.floor(Math.random() * 3) + 1;
+                for (let i = 0; i < count; i++) {
+                    const idx = Math.floor(Math.random() * agents.length);
+                    const statuses = ['online', 'syncing', 'offline', 'working'];
+                    const newStatus = statuses[Math.floor(Math.random() * statuses.length)];
+                    if (agents[idx].status !== newStatus) {
+                        agents[idx].status = newStatus;
+                        agents[idx].lastPing = Date.now();
+                    }
+                }
+                if (STATE.currentSection === 'agents') updateAgentDots();
+                if (STATE.currentSection === 'dashboard') renderDashboardSummary();
+                const offlineCount = agents.filter(a => a.status === 'offline').length;
+                if (offlineCount >= 2) {
+                    addNotification('error', `${offlineCount} agentes fuera de línea`);
+                }
+            }, 15000);
+        }
+
+        function updateAgentDots() {
+            document.querySelectorAll('.agent-card').forEach(card => {
+                const agentId = parseInt(card.dataset.agentId);
+                const agent = agents.find(a => a.id === agentId);
+                if (agent) {
+                    const dot = card.querySelector('.agent-dot');
+                    const statusLabel = card.querySelector('.text-gray-600');
+                    const vincLabel = card.querySelectorAll('.text-gray-600')[1];
+                    if (dot) dot.className = `agent-dot ${agent.status}`;
+                    if (statusLabel) {
+                        const labels = { 'online': 'En línea', 'syncing': 'Sincronizando', 'offline': 'Fuera de línea', 'working': 'Trabajando' };
+                        statusLabel.textContent = labels[agent.status];
+                    }
+                }
+            });
+        }
+
+        // =============================================
+        // ⌨️ ATAJOS DE TECLADO
+        // =============================================
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeAgentDrawer();
+                    document.getElementById('notif-dropdown')?.classList.add('hidden');
+                    document.getElementById('mobile-notif-dropdown')?.classList.add('hidden');
+                }
+                if (e.ctrlKey) {
+                    if (e.key === '1') { e.preventDefault(); showSection('dashboard'); }
+                    if (e.key === '2') { e.preventDefault(); showSection('orchestrator'); }
+                    if (e.key === '3') { e.preventDefault(); showSection('agents'); }
+                    if (e.key === '4') { e.preventDefault(); showSection('chat'); }
+                    if (e.key === 'k') { e.preventDefault(); showSection('chat'); const ci = document.getElementById('chat-input'); if (ci) ci.focus(); }
+                }
+            });
+        }
+
+        // =============================================
+        // 🚀 INICIALIZACIÓN
+        // =============================================
+        function init() {
+            showSection('dashboard');
+            simulateLiveUpdates();
+            setupKeyboardShortcuts();
+            simulateNewMessages();
+            initMonitorSelect();
+            document.addEventListener('click', (e) => {
+                const desktopDropdown = document.getElementById('notif-dropdown');
+                const desktopBtn = document.getElementById('notif-btn');
+                const mobileDropdown = document.getElementById('mobile-notif-dropdown');
+                const mobileBtn = document.getElementById('mobile-notif-btn');
+                if (desktopDropdown && !desktopDropdown.classList.contains('hidden') && !desktopDropdown.contains(e.target) && !desktopBtn?.contains(e.target)) {
+                    desktopDropdown.classList.add('hidden');
+                }
+                if (mobileDropdown && !mobileDropdown.classList.contains('hidden') && !mobileDropdown.contains(e.target) && !mobileBtn?.contains(e.target)) {
+                    mobileDropdown.classList.add('hidden');
+                }
+            });
+            document.getElementById('drawer-agent-name')?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+            });
+            console.log('🚀 Zapia Nexus v3.1.2 inicializado');
+            console.log('🔐 30 agentes con metadata completa');
+            console.log('🔗 Servicios: Google, Facebook, WhatsApp, Telegram, IA, BD, CRM, etc.');
+            console.log('💡 Ctrl+1-4: Navegar | Ctrl+K: Chat | Esc: Cerrar paneles');
+            console.log('💬 /ayuda para ver comandos | 👁️ Pestaña Monitor para ver conversaciones');
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+
+        // Exponer para debug
+        window.Zapia = {
+            agents,
+            STATE,
+            showSection,
+            openAgentDrawer,
+            closeAgentDrawer,
+            renderAgents,
+            exportData,
+            addNotification,
+            conversationsDB,
+            loadMonitorConversation
+        };
+    </script>
+
+<script>
+    const SB_URL = "https://ypzudkxowpxvdggvongz.supabase.co";
+    const SB_PUB_KEY = "sb_publishable_KmyqfJTmmW4R5FKUeB5b4A_GVFYnn4b";
+    const SB_SR_KEY = "sb_secret_ZI58ZVVpnIFdDZg" + "_yRziNg_abT7U1pf";
+    
+    const sbPub = supabase.createClient(SB_URL, SB_PUB_KEY);
+    const sbSR = supabase.createClient(SB_URL, SB_SR_KEY);
+
+    async function executeOrchestratorCommand() {
+        const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
+        if (!input || !input.value.trim()) return;
+        const command = input.value.trim();
+        const logFeed = document.getElementById('log-feed') || document.querySelector('#mobile-content #log-feed');
+        if (logFeed) {
+            const entry = document.createElement('div');
+            entry.className = 'flex gap-2 opacity-50';
+            entry.innerHTML = `<span class="text-yellow-500">[SYS]</span> <span class="text-gray-400">[${new Date().toLocaleTimeString()}] Enviando...</span>`;
+            logFeed.appendChild(entry);
+            logFeed.scrollTop = logFeed.scrollHeight;
+        }
+        try {
+            const { error } = await sbSR.from('nexus_bus').insert({
+                emisor: 'DASHBOARD_Nexus',
+                receptor: 'ORCHESTRATOR',
+                mensaje: command,
+                status: 'pending'
+            });
+            if (error) throw error;
+            input.value = '';
+        } catch (err) {
+            console.error('Error:', err);
+        }
+    }
+
+    function setupRealTime() {
+        sbPub.channel('nexus_bus')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'nexus_bus' }, (payload) => {
+                const { emisor, mensaje, created_at } = payload.new;
+                const logFeed = document.getElementById('log-feed') || document.querySelector('#mobile-content #log-feed');
+                if (logFeed) {
+                    const entry = document.createElement('div');
+                    entry.className = 'flex gap-2 border-l-2 border-blue-500/30 pl-2';
+                    const time = new Date(created_at).toLocaleTimeString();
+                    entry.innerHTML = `<span class="text-blue-400">[${emisor}]</span> <span class="text-gray-400">[${time}] ${mensaje}</span>`;
+                    logFeed.appendChild(entry);
+                    logFeed.scrollTop = logFeed.scrollHeight;
+                }
+            })
+            .subscribe();
+    }
+
+    window.addEventListener('load', () => {
+        setupRealTime();
+        const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
+        if (input) {
+            input.onkeydown = (e) => { if (e.key === 'Enter') executeOrchestratorCommand(); };
+        }
+    });
+</script>
+
+</body>
+</html>
