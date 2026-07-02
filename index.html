@@ -1746,6 +1746,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    window.sendChatMessage = async function() {
+        const input = document.getElementById('chat-input') || document.querySelector('#mobile-content #chat-input');
+        if (!input || !input.value.trim()) return;
+        const msg = input.value.trim();
+        
+        // El chat también lo mandamos al bus pero con otro receptor si hace falta, o al mismo
+        const { error } = await sbAdmin.from('nexus_bus').insert([{ 
+            emisor: 'MAESTRA', 
+            receptor: 'Zapia-Alpha', 
+            mensaje: msg, 
+            status: 'chat' 
+        }]);
+        
+        if (!error) {
+            input.value = '';
+        }
+    };
+
     // Real-time logs
     sbPub.channel('nexus_bus')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'nexus_bus' }, payload => {
