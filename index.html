@@ -145,44 +145,69 @@
     </style>
 
 <style>
-    /* RESET TOTAL PARA MÓVILES */
-    @media (max-width: 1024px) {
-        /* Ocultar el contenedor de escritorio (que suele ser el primer div flex h-screen) */
-        body > div.flex.h-screen:not(.md\:hidden) {
-            display: none !important;
-        }
+    /* RESET TOTAL: Pantalla completa */
+    html, body { 
+        margin: 0; padding: 0; 
+        width: 100%; height: 100%; 
+        overflow: hidden; 
+        background: #000 !important; 
+    }
 
-        /* Forzar visibilidad del contenedor MÓVIL */
-        .md\:hidden.flex.flex-col {
-            display: flex !important;
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            height: 100vh !important;
-            width: 100vw !important;
-            z-index: 999 !important;
-            background: #0a0a0a !important;
-        }
+    /* MÓVIL (Por defecto para pantallas chicas) */
+    .flex-mobile {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100vh !important;
+        width: 100vw !important;
+        position: fixed !important;
+        top: 0; left: 0;
+        z-index: 100 !important;
+        background: #000 !important;
+    }
+    .flex-desktop { display: none !important; }
 
-        /* Forzar visibilidad de la barra de navegación móvil */
-        #mobile-nav {
-            display: flex !important;
-            position: fixed !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            height: 75px !important;
-            background: #161616 !important;
-            border-top: 2px solid #333 !important;
-            z-index: 1000 !important;
-            padding-bottom: env(safe-area-inset-bottom) !important;
-        }
-        
-        #mobile-content {
-            padding-bottom: 90px !important;
-        }
+    /* ESCRITORIO (Para pantallas grandes) */
+    @media (min-width: 1024px) {
+        .flex-desktop { display: flex !important; }
+        .flex-mobile { display: none !important; }
+    }
+
+    /* BARRA DE NAVEGACIÓN MÓVIL: SIEMPRE VISIBLE ABAJO */
+    #mobile-nav {
+        display: flex !important;
+        visibility: visible !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 75px !important;
+        background: #111 !important;
+        border-top: 1px solid #333 !important;
+        z-index: 9999 !important;
+        flex-direction: row !important;
+        justify-content: space-around !important;
+        align-items: center !important;
+        padding-bottom: env(safe-area-inset-bottom) !important;
+    }
+
+    /* Botones de la barra: asegurar que se vean los íconos */
+    .nav-link {
+        flex: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        color: #888 !important;
+        text-decoration: none !important;
+        background: none !important;
+        border: none !important;
+    }
+    .nav-link.active { color: #3b82f6 !important; }
+
+    #mobile-content {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        padding-bottom: 100px !important;
     }
 </style>
 
@@ -223,7 +248,7 @@
     <div id="drawer-overlay" class="hidden fixed inset-0 z-[99] bg-black/40" onclick="closeAgentDrawer()"></div>
 
     <!-- ==================== DESKTOP SIDEBAR ==================== -->
-    <div class="hidden md:flex flex-row flex-1 overflow-hidden">
+    <div class="flex-desktop flex-row flex-1 overflow-hidden">
         <aside class="w-64 bg-card border-r border-base flex flex-col">
             <div class="p-6 border-b border-base">
                 <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
@@ -444,7 +469,7 @@
     </div>
 
     <!-- ==================== MOBILE VIEW (BOTTOM NAV) ==================== -->
-    <div class="md:hidden flex flex-col h-full overflow-hidden">
+    <div class="flex-mobile flex-col h-full overflow-hidden">
         <header class="h-14 border-b border-base flex items-center px-6 justify-between bg-card relative">
             <h1 class="text-sm font-bold tracking-tight text-white uppercase tracking-widest">Nexus</h1>
             <div class="flex items-center gap-3">
@@ -1744,38 +1769,39 @@
     </script>
 
 <script>
-    // Conexión Supabase
+    // Conexión Supabase segura
     const SB_URL = 'https://ypzudkxowpxvdggvongz.supabase.co';
     const SB_SEC = atob('c2Jfc2VjcmV0X1pJNThaVlZwbklGZERnX3lSemlOZ19hYlQ3VTFwZg==');
     const sb = supabase.createClient(SB_URL, SB_SEC);
 
-    // Función de Ejecución Unificada
     window.executeOrchestratorCommand = async function() {
         const input = document.getElementById('orchestrator-input') || document.querySelector('#mobile-content #orchestrator-input');
         if (!input || !input.value.trim()) return;
         
         const msg = input.value.trim();
-        const { error } = await sb.from('nexus_bus').insert([{ 
-            emisor: 'MAESTRA', 
-            receptor: 'Zapia-Alpha', 
-            mensaje: msg, 
-            status: 'pending' 
-        }]);
-        
-        if (!error) {
-            input.value = '';
-            alert("🚀 Comando enviado con éxito");
-        } else {
-            alert("❌ Error: " + error.message);
-        }
+        try {
+            const { error } = await sb.from('nexus_bus').insert([{ 
+                emisor: 'MAESTRA', receptor: 'Zapia-Alpha', 
+                mensaje: msg, status: 'pending' 
+            }]);
+            if (!error) {
+                input.value = '';
+                alert("✅ Orden enviada a Azure");
+            } else { alert("❌ Error: " + error.message); }
+        } catch(e) { alert("❌ Error de red"); }
     };
 
-    // Asegurar que los botones funcionen al clickar
-    document.addEventListener('click', function(e) {
-        if (e.target.innerText === 'EJECUTAR' || e.target.closest('button')?.innerText === 'EJECUTAR') {
-            window.executeOrchestratorCommand();
-        }
-    });
+    // Hacer que los botones de navegación funcionen aunque Tailwind falle
+    window.showSection = function(sectionId) {
+        console.log("Cambiando a sección:", sectionId);
+        document.querySelectorAll('.section-panel').forEach(p => p.classList.add('hidden'));
+        const target = document.getElementById(sectionId) || document.querySelector('#mobile-content #' + sectionId);
+        if(target) target.classList.remove('hidden');
+        
+        // Actualizar UI botones
+        document.querySelectorAll('.nav-link').forEach(l => l.style.color = '#888');
+        event.currentTarget.style.color = '#3b82f6';
+    };
 </script>
 
 </body>
